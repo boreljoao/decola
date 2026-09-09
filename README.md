@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Decola
 
-## Getting Started
+Plataforma brasileira que transforma um briefing profundo em uma landing page personalizada, com medição contínua de visitas, cliques e leads. Especificação completa em [DECOLA_MASTER_SPEC.md](DECOLA_MASTER_SPEC.md); estado real por requisito em [docs/requirements-matrix.md](docs/requirements-matrix.md).
 
-First, run the development server:
+## Rodando localmente
+
+Pré-requisito: Node.js 24+ (nesta máquina: `%LOCALAPPDATA%\Programs\nodejs`, já no PATH do usuário).
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abra http://localhost:3000. **Nenhuma configuração externa é necessária em dev**: sem `DATABASE_URL`, o banco é um Postgres embarcado (PGlite) em `.data/pglite` com migrations automáticas; a autenticação usa o modo de desenvolvimento identificado (login por e-mail, sem senha); e-mails são gravados em `.data/outbox-emails`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Jornada completa local: criar conta → briefing rápido → geração → preview → publicar → visitar `http://<slug>.localhost:3000` → enviar lead → ver leads/métricas no painel.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Learn More
+| Comando | Função |
+|---|---|
+| `npm run dev` | Servidor de desenvolvimento (porta 3000) |
+| `npm run build` / `npm start` | Build e servidor de produção |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | `next typegen` + `tsc --noEmit` |
+| `npm test` | Testes (Vitest) |
+| `npm run db:generate` | Gera migrations a partir de `src/server/db/schema.ts` |
 
-To learn more about Next.js, take a look at the following resources:
+## Produção
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Configuração obrigatória e passo a passo em [docs/activation-checklist.md](docs/activation-checklist.md). Sem `DATABASE_URL`, `SESSION_SECRET` e Supabase Auth, o boot de produção falha de propósito — não existe fallback silencioso para mocks (spec §20).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Documentação
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [docs/architecture.md](docs/architecture.md) — stack, camadas e fronteiras de provider
+- [docs/decisions.md](docs/decisions.md) — decisões D-001…D-013 com contexto
+- [docs/implementation-plan.md](docs/implementation-plan.md) — fases A–G
+- [docs/requirements-matrix.md](docs/requirements-matrix.md) — requisito → status honesto
+- [docs/activation-checklist.md](docs/activation-checklist.md) — integrações e ativação
+- [docs/next-actions.md](docs/next-actions.md) — checkpoint de retomada

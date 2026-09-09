@@ -1,26 +1,84 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+  Tokens semânticos Decola (spec §5.1).
+  Marketing: céu noturno, azul elétrico para interação, âmbar para ação comercial.
+  Dashboard: claro, superfícies delimitadas, cor reservada a status/ação.
+*/
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@theme {
+  /* céu noturno */
+  --color-night-950: #05070d;
+  --color-night-900: #0a0e1a;
+  --color-night-850: #0e1424;
+  --color-night-800: #131b30;
+  --color-night-700: #1c2742;
+  --color-night-600: #2a3a5f;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* azul elétrico — interação */
+  --color-electric-300: #8fb7ff;
+  --color-electric-400: #5f96ff;
+  --color-electric-500: #3573f5;
+  --color-electric-600: #2258d6;
+  --color-electric-700: #1a44ad;
+
+  /* âmbar — ação comercial */
+  --color-ember-300: #ffd280;
+  --color-ember-400: #f8b84e;
+  --color-ember-500: #eda428;
+  --color-ember-600: #ce8712;
+  --color-ember-700: #a86a08;
+
+  /* neutros frios para texto sobre escuro */
+  --color-mist-100: #eef2fa;
+  --color-mist-300: #c3cde0;
+  --color-mist-500: #8b98b3;
+  --color-mist-700: #5a6680;
+
+  /* dashboard claro */
+  --color-paper: #f7f8fb;
+  --color-card: #ffffff;
+  --color-ink-900: #161d2b;
+  --color-ink-600: #4a5568;
+  --color-ink-400: #94a3b8;
+
+  --color-success-600: #0f7b4f;
+  --color-danger-600: #c23934;
+  --color-warning-600: #b97a08;
+
+  --font-display: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
+  --font-grotesk: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 1rem;
+
+  --shadow-lift: 0 1px 2px rgb(10 14 26 / 0.06), 0 8px 24px -8px rgb(10 14 26 / 0.14);
+  --shadow-glow: 0 0 0 1px rgb(53 115 245 / 0.25), 0 8px 40px -8px rgb(53 115 245 / 0.35);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* números tabulares em métricas e preços */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* foco visível consistente */
+:focus-visible {
+  outline: 2px solid var(--color-electric-500);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
