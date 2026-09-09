@@ -265,8 +265,15 @@ export function ManualEditor({
           <VersionsPanel pageId={pageId} versions={versions} />
         </div>
 
-        {/* Preview ao vivo */}
-        <div className="min-w-0">
+        {/*
+          Preview ao vivo. É uma região rotulada porque a página renderizada
+          traz o próprio h1: sem o rótulo, quem navega por títulos encontraria
+          dois h1 sem saber que o segundo pertence ao documento pré-visualizado.
+        */}
+        <section
+          aria-label="Pré-visualização da página em edição"
+          className="min-w-0"
+        >
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-600">
             Preview ao vivo (estado de edição — não é o publicado)
           </p>
@@ -278,7 +285,7 @@ export function ManualEditor({
               showBadge
             />
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );
@@ -490,6 +497,7 @@ function SectionForm({
               >
                 {isStringList ? (
                   <Input
+                    aria-label={`${list.label} — item ${idx + 1}`}
                     value={(item as string) ?? ""}
                     onChange={(e) => {
                       const next = [...items];

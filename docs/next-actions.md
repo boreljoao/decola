@@ -1,34 +1,48 @@
 # Decola — Próximas ações concretas
 
-Checkpoint de 2026-09-09 (fim da Fase C: briefing completo, editor manual+IA, criativos — sobre a Fase B/fatia vertical e o marketing da Fase E). Somente pendências reais; nada aqui transfere trabalho já autorizado e implementável — é a ordem de retomada.
+Checkpoint de 2026-09-09, ao fim das fases A–G. Só pendências reais; nada aqui transfere trabalho já implementável.
 
-## Decisões que só o negócio pode tomar (bloqueiam apenas o que dependem delas)
+## 1. Decisões que só o negócio pode tomar
 
-1. Registrar o domínio de produção (define `PUBLISH_ROOT_DOMAIN`/`APP_URL`; hoje os exemplos usam localhost e nenhum domínio é inventado).
-2. Valores pendentes do `commercial-policy` (spec §3.1): créditos por plano, preços dos pacotes 50/150/400, custo por ação, franquias Pro/Business, hospedagem anual do Vitalício, benefícios white-label, comissão exata 15–20%.
-3. Criar contas: Supabase, Stripe, Mercado Pago, Resend, Anthropic (ver docs/activation-checklist.md).
+Cada item bloqueia apenas o que depende dele — o resto do produto funciona.
 
-## Fase C — o que ficou de fora desta rodada
+| Decisão | O que destrava |
+|---|---|
+| Registrar o domínio de produção | Publicação em subdomínio real com SSL wildcard; hoje tudo roda em `*.localhost` e nenhum domínio é inventado |
+| Créditos por plano, preço dos pacotes, custo por ação | Remove o aviso "em definição comercial" da tela de Combustível e fecha a política de cobrança da edição por IA |
+| Valor anual de hospedagem do Vitalício | Libera o checkout do Vitalício (hoje bloqueado com motivo exibido) |
+| Comissão exata do marketplace (15–20%) | Fecha o contrato de profissionais |
+| Contrato e preço do plano Agência | Tira o "sob consulta" |
+| Benefícios do white-label | Define até onde vai a promessa em /agencias |
 
-1. **Jornada E2E do briefing completo (8 módulos, ~20min)** não foi percorrida manualmente no navegador — só testada por unidade e via um módulo isolado. Antes de anunciar "modo completo" publicamente, rodar a jornada inteira uma vez.
-2. **Upload de logo/imagens**: não existe `StorageProvider`. O editor manual hoje só edita texto, cor, tipografia e ordem — não troca imagens. Precisa de: adapter filesystem (dev) + Supabase Storage (prod), validação de MIME real/dimensões/tamanho (spec §16, limite 5MB), e um campo de imagem no `SECTION_FIELDS` do editor.
-3. **Custo/crédito da edição por IA**: a UI hoje diz "sem cobrança nesta fase" — correto e honesto, mas fica pendente até o sistema de créditos (Fase D) existir para mostrar saldo/reserva real antes da operação.
-4. **Conflito de edição concorrente**: a detecção via `baseVersionId` está no código mas nunca foi exercitada com duas abas abertas ao mesmo tempo — vale um teste manual ou automatizado.
-5. **ImageProvider por IA**: os criativos Meta hoje usam só composição tipográfica (satori+resvg) sobre a paleta da página. Se um provedor de imagem por IA for adicionado depois, os criativos podem ganhar fundo fotográfico — não é bloqueio, é evolução.
+## 2. Criar contas e configurar (docs/activation-checklist.md)
 
-## Fase D — receita (ordem interna)
+Supabase (banco + auth + storage), Stripe, Mercado Pago, Resend, Anthropic. Sem elas o produto roda em modo de desenvolvimento identificado; com elas, cada capability liga sozinha.
 
-1. Tabelas: orders, subscriptions, entitlement_grants, payments, webhook_inbox, credit_* (schema §4 da spec).
-2. `PaymentProvider` Stripe (checkout + webhook verificado + inbox idempotente) → grants → `getWorkspacePlan` real (hoje sempre retorna Free).
-3. Mercado Pago Pix avulso; reconciliação; downgrade/cancelamento (§3.2).
-4. Sistema de créditos (Combustível): reserva/consumo/liberação atômicos — desbloqueia custo exibido na edição por IA e franquia real de criativos por plano.
-5. Só então habilitar botões de contratação em /precos (hoje: "Contratação em breve" com motivo) e a franquia de criativos fora do modo dev.
+## 3. Código pendente, por prioridade
 
-## Dívidas técnicas conhecidas
+### Alta — completam promessas já visíveis na interface
+1. **Domínio próprio** (§11.2): verificação DNS por TXT, emissão de SSL e os estados `pending_verification → verified → ssl_pending → active`. Hoje os planos pagos anunciam domínio próprio e a funcionalidade não existe.
+2. **Cupons** (§12.3): reserva transacional com expiração, escopo e limite. Nada na UI promete cupom hoje, mas o catálogo comercial pressupõe.
+3. **Teste automatizado de isolamento entre workspaces** (§19.1 item 1): a autorização existe em toda ação, mas não há teste provando que o workspace A não alcança dados do B. É o teste mais importante que falta.
 
-- Testes de invariantes com banco (isolamento entre workspaces, concorrência da fila, dedup de criativos) — rodar contra PGlite in-memory no vitest.
-- QA visual sistemático em 360/390/768/1024/1440 + teclado/contraste (spec §19.3) — feito apenas spot-check desktop e mobile na Fase B; editor e criativos ainda não passaram por QA visual dedicado.
-- Lighthouse ≥95 nas páginas públicas — ainda não medido; registrar em docs/qa-report.md quando rodar.
-- Rotas §6 ainda não criadas: /blog, /profissionais, /agencias, /contato, /cookies, /app/conta e afins — criar junto com as fases C–F.
-- Renomear `verificar-email`/`recuperar-senha` (fluxos chegam com Supabase Auth ativo).
-- Rate limiter é in-memory (single-node) — trocar por armazenamento compartilhado ao escalar para múltiplas instâncias.
+### Média — completam fases já iniciadas
+4. **Áudio no briefing** (§7.2): exige `TranscriptionProvider`; o texto continua funcionando sem ele.
+5. **Marketplace completo** (§15): solicitação → proposta → contrato → entrega → avaliação. As tabelas existem; falta a UI do fluxo e o repasse (que depende de provedor com split).
+6. **API Business** (§15): chaves com hash, escopos, rate limit e OpenAPI.
+7. **Jornada E2E do briefing de 8 módulos** no navegador e **teste de conflito com duas abas**.
+
+### Baixa — evolução
+8. Ampliar o catálogo de componentes rumo às ~50 composições (§8.3).
+9. `ImageProvider` por IA para criativos com fundo fotográfico (hoje é composição tipográfica real).
+10. Gestão centralizada de workspaces para agências.
+
+## 4. Antes de ir a produção
+
+- [ ] Rodar Lighthouse nas páginas públicas e registrar em `docs/qa-report.md` (meta ≥95, ainda não medido).
+- [ ] Exercitar os invariantes de crédito/pagamento contra Postgres real com conexões paralelas — PGlite serializa e esconderia uma corrida.
+- [ ] Fazer uma transação sandbox em Stripe e Mercado Pago de ponta a ponta.
+- [ ] Configurar o cron do `POST /api/jobs/drain` com `JOB_DRAIN_TOKEN`.
+- [ ] Trocar o rate limiter in-memory por armazenamento compartilhado se houver mais de uma instância.
+- [ ] Revisão jurídica de termos, privacidade e cookies (as três estão marcadas como minuta).
+- [ ] Definir o e-mail remetente verificado no Resend.

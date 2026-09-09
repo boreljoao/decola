@@ -114,11 +114,18 @@ export function ImageUploadField({
         </Button>
       )}
 
+      {/*
+        O botão acima é o controle real; este input existe só para abrir o
+        seletor de arquivos. Fica fora da ordem de foco e do leitor de tela
+        para não virar um campo sem rótulo na navegação por teclado.
+      */}
       <input
         ref={inputRef}
         type="file"
         accept="image/png,image/jpeg,image/webp"
         className="sr-only"
+        tabIndex={-1}
+        aria-hidden="true"
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file) void upload(file);

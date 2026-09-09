@@ -33,7 +33,9 @@
   --color-mist-100: #eef2fa;
   --color-mist-300: #c3cde0;
   --color-mist-500: #8b98b3;
-  --color-mist-700: #5a6680;
+  /* 4.9:1 sobre --color-night-900: passa WCAG AA para texto normal.
+     O tom anterior (#5a6680) ficava em 3.3:1 e reprovava. */
+  --color-mist-700: #73819f;
 
   /* dashboard claro */
   --color-paper: #f7f8fb;
