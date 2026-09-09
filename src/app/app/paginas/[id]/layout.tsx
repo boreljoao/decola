@@ -6,6 +6,8 @@ const TABS = [
   { slug: "briefing", label: "Briefing" },
   { slug: "geracao", label: "Geração" },
   { slug: "preview", label: "Preview" },
+  { slug: "editor", label: "Editor" },
+  { slug: "criativos", label: "Criativos" },
   { slug: "publicacao", label: "Publicação" },
   { slug: "leads", label: "Leads" },
   { slug: "metricas", label: "Métricas" },

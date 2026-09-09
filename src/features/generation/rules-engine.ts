@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+﻿import { createHash } from "node:crypto";
 import type { BriefingAnswers } from "@/features/briefing/questions";
 import { answerValue } from "@/features/briefing/questions";
 import {
@@ -6,22 +6,21 @@ import {
   type PageDocument,
   type PageSection,
 } from "./page-document";
+import { contrastFor, NICHE_PALETTES, type Palette } from "./palettes";
 
 /**
  * RulesGenerationProvider — motor determinístico honesto (decisão D-006).
  * Não é mock: cada briefing produz composição, paleta e copy distintos, derivados
  * exclusivamente das respostas. Nunca inventa fatos: provas ausentes ⇒ seção
- * omitida; preços/garantias só aparecem se informados.
+ * omitida; preços/garantias/credenciais só aparecem se informados.
  */
 
-export const RULES_ENGINE_VERSION = "rules-1.0.0";
+export const RULES_ENGINE_VERSION = "rules-1.1.0";
 
 type Niche = PageDocument["strategy"]["niche"];
 type Objective = PageDocument["strategy"]["objective"];
 
 interface NichePreset {
-  dark: PageDocument["designTokens"]["palette"];
-  light: PageDocument["designTokens"]["palette"];
   defaultScheme: "dark" | "light";
   fontHeading: "sora" | "space-grotesk" | "inter";
   processBenefits: Array<{ title: string; description: string; icon: "spark" | "shield" | "clock" | "heart" | "target" | "star" | "chat" | "check" }>;
@@ -42,14 +41,6 @@ const PALETTES: Record<Niche, NichePreset> = {
   estetica_beleza: {
     defaultScheme: "light",
     fontHeading: "sora",
-    light: {
-      bg: "#FDF9F7", surface: "#FFFFFF", text: "#2B1F24", muted: "#7A6A70",
-      primary: "#A6486B", primaryContrast: "#FFFFFF", accent: "#C98A2D", accentContrast: "#211302",
-    },
-    dark: {
-      bg: "#211A1E", surface: "#2C2328", text: "#F5EDF0", muted: "#B9A8AF",
-      primary: "#E38BAC", primaryContrast: "#33101E", accent: "#E2B25E", accentContrast: "#2A1B03",
-    },
     processBenefits: [
       { title: "Atendimento individual", description: "Cada sessão parte da sua avaliação, não de um protocolo genérico.", icon: "heart" },
       { title: "Ambiente preparado", description: "Espaço pensado para você relaxar do início ao fim do atendimento.", icon: "star" },
@@ -63,14 +54,6 @@ const PALETTES: Record<Niche, NichePreset> = {
   saude: {
     defaultScheme: "light",
     fontHeading: "sora",
-    light: {
-      bg: "#F6FAF9", surface: "#FFFFFF", text: "#15292B", muted: "#5E7476",
-      primary: "#0E7E74", primaryContrast: "#FFFFFF", accent: "#B4762A", accentContrast: "#FFFFFF",
-    },
-    dark: {
-      bg: "#122022", surface: "#1B2C2E", text: "#EAF4F3", muted: "#9FB6B4",
-      primary: "#4FC0B4", primaryContrast: "#06211E", accent: "#E0A45C", accentContrast: "#271703",
-    },
     processBenefits: [
       { title: "Escuta de verdade", description: "Tempo de consulta dedicado a entender o seu caso por inteiro.", icon: "chat" },
       { title: "Orientação clara", description: "Você entende cada etapa do cuidado, sem jargão desnecessário.", icon: "check" },
@@ -84,14 +67,6 @@ const PALETTES: Record<Niche, NichePreset> = {
   servicos_locais: {
     defaultScheme: "light",
     fontHeading: "space-grotesk",
-    light: {
-      bg: "#F7F9FC", surface: "#FFFFFF", text: "#1A2433", muted: "#5D6B80",
-      primary: "#1F5EDD", primaryContrast: "#FFFFFF", accent: "#C77914", accentContrast: "#FFFFFF",
-    },
-    dark: {
-      bg: "#131A26", surface: "#1C2534", text: "#EBF0F8", muted: "#9AA8BC",
-      primary: "#6D9BFF", primaryContrast: "#0A1B3D", accent: "#EFA94A", accentContrast: "#2A1A02",
-    },
     processBenefits: [
       { title: "Orçamento sem enrolação", description: "Você descreve o que precisa e recebe uma resposta direta.", icon: "check" },
       { title: "Compromisso com prazo", description: "Combinado é combinado: você sabe quando e como o serviço acontece.", icon: "clock" },
@@ -105,14 +80,6 @@ const PALETTES: Record<Niche, NichePreset> = {
   gastronomia: {
     defaultScheme: "dark",
     fontHeading: "sora",
-    light: {
-      bg: "#FBF7F2", surface: "#FFFFFF", text: "#2A1E14", muted: "#77685A",
-      primary: "#B4451F", primaryContrast: "#FFFFFF", accent: "#946A15", accentContrast: "#FFFFFF",
-    },
-    dark: {
-      bg: "#1D1510", surface: "#291E17", text: "#F7EFE7", muted: "#BCA893",
-      primary: "#F2814D", primaryContrast: "#33150A", accent: "#E6B454", accentContrast: "#2A1C03",
-    },
     processBenefits: [
       { title: "Feito na hora", description: "Preparo cuidadoso, do jeito que a casa acredita.", icon: "spark" },
       { title: "Ingredientes escolhidos", description: "Seleção criteriosa do que chega ao seu prato.", icon: "star" },
@@ -126,14 +93,6 @@ const PALETTES: Record<Niche, NichePreset> = {
   infoprodutos: {
     defaultScheme: "dark",
     fontHeading: "space-grotesk",
-    light: {
-      bg: "#F8F7FC", surface: "#FFFFFF", text: "#221E33", muted: "#6A6482",
-      primary: "#5B3DF5", primaryContrast: "#FFFFFF", accent: "#B26A0F", accentContrast: "#FFFFFF",
-    },
-    dark: {
-      bg: "#16131F", surface: "#201B2E", text: "#F0EDF9", muted: "#A79FC0",
-      primary: "#9D86FF", primaryContrast: "#1B1040", accent: "#F0AC4B", accentContrast: "#2A1A02",
-    },
     processBenefits: [
       { title: "Direto ao ponto", description: "Conteúdo organizado para você aplicar, não só assistir.", icon: "target" },
       { title: "Passo a passo claro", description: "Você sempre sabe qual é a próxima etapa da jornada.", icon: "check" },
@@ -147,14 +106,6 @@ const PALETTES: Record<Niche, NichePreset> = {
   outro: {
     defaultScheme: "light",
     fontHeading: "sora",
-    light: {
-      bg: "#F8F9FB", surface: "#FFFFFF", text: "#1D2530", muted: "#5F6B7A",
-      primary: "#2563EB", primaryContrast: "#FFFFFF", accent: "#B4762A", accentContrast: "#FFFFFF",
-    },
-    dark: {
-      bg: "#141A22", surface: "#1D2530", text: "#EDF1F7", muted: "#9BA7B6",
-      primary: "#7AA5FF", primaryContrast: "#0A1F4D", accent: "#E8AC55", accentContrast: "#2A1A02",
-    },
     processBenefits: [
       { title: "Atendimento direto", description: "Você fala com quem resolve, sem intermediários.", icon: "chat" },
       { title: "Clareza do início ao fim", description: "Você sabe o que esperar em cada etapa.", icon: "check" },
@@ -173,6 +124,8 @@ const CTA_BY_OBJECTIVE: Record<Objective, string> = {
   compra: "Quero garantir o meu",
   download: "Baixar agora",
 };
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function seededPick<T>(seed: string, salt: string, options: readonly T[]): T {
   const h = createHash("sha256").update(`${seed}:${salt}`).digest();
@@ -222,7 +175,7 @@ function splitPainItems(dor: string): Array<{ title: string; description: string
     ];
   }
   return parts.map((p) => ({
-    title: stripFinalDot(sentenceCase(p)).split(" ").slice(0, 6).join(" "),
+    title: truncateAtWord(stripFinalDot(sentenceCase(p)), 42),
     description: sentenceCase(p),
   }));
 }
@@ -241,6 +194,29 @@ function parseProofs(raw: string | undefined): Array<{ text: string; source?: st
     });
 }
 
+/** FAQ do usuário: uma por linha, "Pergunta? | Resposta". */
+function parseCustomFaq(
+  raw: string | undefined,
+): Array<{ question: string; answer: string }> {
+  if (!raw) return [];
+  return raw
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const parts = line.split("|");
+      if (parts.length >= 2) {
+        return {
+          question: truncateAtWord(sentenceCase(parts[0]), 180),
+          answer: sentenceCase(parts.slice(1).join("|")).slice(0, 2000),
+        };
+      }
+      return null;
+    })
+    .filter((x): x is { question: string; answer: string } => x !== null)
+    .slice(0, 8);
+}
+
 export interface RulesEngineInput {
   briefingRevisionId: string;
   answersHash: string;
@@ -252,19 +228,35 @@ export function generatePageDocument(input: RulesEngineInput): PageDocument {
   const seed = answersHash;
 
   const nome = answerValue<string>(answers, "identidade.nome") ?? "Seu negócio";
+  const slogan = answerValue<string>(answers, "identidade.slogan");
+  const historia = answerValue<string>(answers, "identidade.historia");
   const niche = (answerValue<string>(answers, "oferta.nicho") ?? "outro") as Niche;
   const descricao = answerValue<string>(answers, "oferta.descricao") ?? "";
   const oferta = answerValue<string>(answers, "oferta.oferta_principal") ?? descricao;
+  const precoTexto = answerValue<string>(answers, "oferta.preco_texto");
+  const precoCondicao = answerValue<string>(answers, "oferta.preco_condicao");
+  const garantia = answerValue<string>(answers, "oferta.garantia");
+  const areaAtendida = answerValue<string>(answers, "oferta.area_atendida");
   const dor = answerValue<string>(answers, "publico.dor") ?? "";
+  const desejo = answerValue<string>(answers, "publico.desejo");
   const diferencial = answerValue<string>(answers, "oferta.diferencial") ?? "";
   const objetivo = (answerValue<string>(answers, "conversao.objetivo") ??
     "whatsapp") as Objective;
   const emocoes = answerValue<string[]>(answers, "emocao.emocoes") ?? ["confianca"];
+  const prioridadeHero = answerValue<string>(answers, "emocao.prioridade_hero");
   const tema = answerValue<string>(answers, "visual.tema") ?? "ia_decide";
+  const corPrincipal = answerValue<string>(answers, "visual.cor_principal");
+  const tipografia = answerValue<string>(answers, "visual.tipografia");
+  const densidade = answerValue<string>(answers, "visual.densidade");
   const tomPremium = answerValue<number>(answers, "visual.tom_premium");
+  const autoridade = answerValue<string>(answers, "conteudo.autoridade");
   const provasRaw = answerValue<string>(answers, "conteudo.provas");
+  const faqRaw = answerValue<string>(answers, "conteudo.faq");
+  const endereco = answerValue<string>(answers, "conteudo.endereco");
+  const horarios = answerValue<string>(answers, "conteudo.horarios");
   const whatsapp = answerValue<string>(answers, "conversao.whatsapp");
   const linkDestino = answerValue<string>(answers, "conversao.link_destino");
+  const formCampos = answerValue<string[]>(answers, "conversao.form_campos");
 
   const inferredFields: string[] = [];
 
@@ -278,6 +270,40 @@ export function generatePageDocument(input: RulesEngineInput): PageDocument {
   const scheme: "dark" | "light" =
     tema === "claro" ? "light" : tema === "escuro" ? "dark" : preset.defaultScheme;
   if (tema === "ia_decide") inferredFields.push("visual.tema");
+
+  // Paleta: preset do nicho, com cor de marca do usuário quando informada.
+  const palettePair = NICHE_PALETTES[niche] ?? NICHE_PALETTES.outro;
+  let palette: Palette = scheme === "dark" ? palettePair.dark : palettePair.light;
+  if (corPrincipal) {
+    const hex = `#${corPrincipal.replace("#", "").toUpperCase()}`;
+    palette = {
+      ...palette,
+      primary: hex,
+      primaryContrast: contrastFor(hex),
+    };
+  }
+
+  const fontHeading =
+    tipografia === "moderna"
+      ? ("sora" as const)
+      : tipografia === "geometrica"
+        ? ("space-grotesk" as const)
+        : tipografia === "neutra"
+          ? ("inter" as const)
+          : preset.fontHeading;
+  if (!tipografia) inferredFields.push("visual.tipografia");
+
+  const isPremium = (tomPremium ?? 50) >= 65;
+  const density =
+    densidade === "compacta"
+      ? ("compact" as const)
+      : densidade === "espacosa"
+        ? ("spacious" as const)
+        : densidade === "regular"
+          ? ("regular" as const)
+          : isPremium
+            ? ("spacious" as const)
+            : ("regular" as const);
 
   const ctx: CopyContext = {
     nome,
@@ -298,7 +324,7 @@ export function generatePageDocument(input: RulesEngineInput): PageDocument {
     urgencia: "deixar claro o custo de adiar a decisão",
     leveza: "falar de forma simples e sem pressão",
   };
-  const angle = `Página focada em ${emotionAngle[emocoes[0]] ?? emotionAngle.confianca}, conduzindo o visitante da dor (“${stripFinalDot(dor).slice(0, 80)}…”) até a ação: ${ctaLabel}.`;
+  const angle = `Página focada em ${emotionAngle[emocoes[0]] ?? emotionAngle.confianca}, conduzindo o visitante da dor (“${truncateAtWord(stripFinalDot(dor), 80)}”) até a ação: ${ctaLabel}.`;
 
   const primeiraFraseDor = truncateAtWord(
     stripFinalDot(dor).split(/[.;!?]/)[0],
@@ -307,17 +333,23 @@ export function generatePageDocument(input: RulesEngineInput): PageDocument {
   const heroHeadlines = [
     `${stripFinalDot(oferta)}, sem complicação`,
     `${nome} — ${stripFinalDot(oferta)}`,
-    `Chega de ${primeiraFraseDor.charAt(0).toLowerCase()}${primeiraFraseDor.slice(1)}`,
+    `Chega de ${lowerFirst(primeiraFraseDor)}`,
   ] as const;
   const headline = seededPick(seed, "headline", heroHeadlines);
 
-  const heroVariant = seededPick(seed, "heroVariant", [
-    "split",
-    "centered",
-    "stacked",
-  ] as const);
+  // Prioridade do hero informada substitui a escolha semeada.
+  const heroVariant =
+    prioridadeHero === "mensagem"
+      ? ("centered" as const)
+      : prioridadeHero === "oferta"
+        ? ("split" as const)
+        : prioridadeHero === "emocao"
+          ? ("stacked" as const)
+          : seededPick(seed, "heroVariant", ["split", "centered", "stacked"] as const);
 
-  const isPremium = (tomPremium ?? 50) >= 65;
+  const subheadline = desejo
+    ? `${sentenceCase(stripFinalDot(descricao))}. O destino: ${lowerFirst(stripFinalDot(desejo))}.`
+    : sentenceCase(descricao);
 
   // ── Seções ────────────────────────────────────────────────────────────────
   const sections: PageSection[] = [];
@@ -329,11 +361,12 @@ export function generatePageDocument(input: RulesEngineInput): PageDocument {
     props: {
       badge: nome,
       headline: sentenceCase(headline).slice(0, 200),
-      subheadline: sentenceCase(descricao).slice(0, 600),
+      subheadline: subheadline.slice(0, 600),
       ctaLabel,
+      secondaryNote: slogan ? stripFinalDot(slogan).slice(0, 200) : undefined,
       highlights:
         diferencial.length > 0
-          ? [stripFinalDot(sentenceCase(diferencial)).slice(0, 200)]
+          ? [truncateAtWord(stripFinalDot(sentenceCase(diferencial)), 200)]
           : undefined,
     },
   });
@@ -380,7 +413,7 @@ export function generatePageDocument(input: RulesEngineInput): PageDocument {
           },
         ]
       : []),
-    ...preset.processBenefits.slice(0, diferencial ? 3 : 3),
+    ...preset.processBenefits,
   ].slice(0, 4);
 
   sections.push({
@@ -410,6 +443,28 @@ export function generatePageDocument(input: RulesEngineInput): PageDocument {
     });
   }
 
+  // Autoridade/história: só com material verificável fornecido pelo usuário.
+  const authorityText = [historia, autoridade]
+    .filter((t): t is string => Boolean(t && t.trim().length > 0))
+    .map((t) => sentenceCase(stripFinalDot(t)))
+    .join(". ");
+  if (authorityText) {
+    sections.push({
+      id: "authority",
+      type: "authority",
+      variant: "profile",
+      props: {
+        title: `Quem está por trás de ${nome}`,
+        text: `${authorityText}.`.slice(0, 2000),
+      },
+    });
+  }
+
+  const offerBullets = [
+    ...(garantia ? [truncateAtWord(`Garantia real: ${lowerFirst(stripFinalDot(garantia))}`, 200)] : []),
+    ...(areaAtendida ? [truncateAtWord(`Atendimento: ${lowerFirst(stripFinalDot(areaAtendida))}`, 200)] : []),
+  ];
+
   sections.push({
     id: "offer",
     type: "offer",
@@ -421,11 +476,29 @@ export function generatePageDocument(input: RulesEngineInput): PageDocument {
           0,
           600,
         ),
+      priceText: precoTexto ? stripFinalDot(precoTexto).slice(0, 200) : undefined,
+      conditions: precoCondicao
+        ? stripFinalDot(precoCondicao).slice(0, 200)
+        : undefined,
+      bullets: offerBullets.length > 0 ? offerBullets : undefined,
       ctaLabel,
     },
   });
 
   if (objetivo === "lead_form") {
+    const chosen =
+      formCampos && formCampos.length > 0
+        ? formCampos
+        : ["nome", "telefone", "mensagem"];
+    if (!formCampos || formCampos.length === 0) {
+      inferredFields.push("conversao.form_campos");
+    }
+    const labels: Record<string, string> = {
+      nome: "Seu nome",
+      email: "Seu e-mail",
+      telefone: "Telefone / WhatsApp",
+      mensagem: "Conte rapidamente o que você precisa",
+    };
     sections.push({
       id: "lead-form",
       type: "lead_form",
@@ -433,11 +506,11 @@ export function generatePageDocument(input: RulesEngineInput): PageDocument {
       props: {
         title: "Deixe seu contato",
         subtitle: `${nome} retorna para você o quanto antes.`,
-        fields: [
-          { id: "nome", label: "Seu nome", required: true },
-          { id: "telefone", label: "Telefone / WhatsApp", required: true },
-          { id: "mensagem", label: "Conte rapidamente o que você precisa", required: false },
-        ],
+        fields: chosen.map((id) => ({
+          id: id as "nome" | "email" | "telefone" | "mensagem",
+          label: labels[id] ?? id,
+          required: id !== "mensagem",
+        })),
         submitLabel: ctaLabel,
         successMessage:
           "Recebemos o seu contato! Você receberá um retorno em breve.",
@@ -445,15 +518,33 @@ export function generatePageDocument(input: RulesEngineInput): PageDocument {
     });
   }
 
+  // Contato: apenas dados reais fornecidos.
+  if (endereco || horarios || areaAtendida) {
+    sections.push({
+      id: "contact",
+      type: "contact",
+      variant: "panel",
+      props: {
+        title: "Onde e quando",
+        address: endereco ? stripFinalDot(endereco).slice(0, 600) : undefined,
+        phone: objetivo === "whatsapp" && whatsapp ? whatsapp : undefined,
+        hours: horarios ? stripFinalDot(horarios).slice(0, 200) : undefined,
+        area: areaAtendida ? stripFinalDot(areaAtendida).slice(0, 200) : undefined,
+      },
+    });
+  }
+
+  const customFaq = parseCustomFaq(faqRaw);
   const presetFaq = preset.faq.map((f) => ({
     question: f.question,
     answer: f.answerTemplate(ctx).slice(0, 2000),
   }));
+  const faqItems = [...customFaq, ...presetFaq].slice(0, 10);
   sections.push({
     id: "faq",
     type: "faq",
     variant: "accordion",
-    props: { title: "Perguntas frequentes", items: presetFaq },
+    props: { title: "Perguntas frequentes", items: faqItems },
   });
 
   sections.push({
@@ -490,12 +581,12 @@ export function generatePageDocument(input: RulesEngineInput): PageDocument {
       angle: angle.slice(0, 600),
     },
     designTokens: {
-      palette: scheme === "dark" ? preset.dark : preset.light,
+      palette,
       scheme,
-      fontHeading: preset.fontHeading,
+      fontHeading,
       fontBody: "inter",
       radius: isPremium ? "sm" : "lg",
-      density: isPremium ? "spacious" : "regular",
+      density,
     },
     seo: {
       title: `${nome} — ${stripFinalDot(oferta)}`.slice(0, 70),

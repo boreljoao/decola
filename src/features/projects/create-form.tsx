@@ -34,10 +34,11 @@ export function CreateProjectForm() {
         </Field>
         <Field
           label="Modo do briefing"
-          hint="O modo rápido leva cerca de 5 minutos; o completo aprofunda em 8 módulos (disponível em breve nesta versão, começamos pelo rápido)."
+          hint="O rápido leva cerca de 5 minutos. O completo percorre 8 módulos (~20 minutos) e dá mais matéria-prima para a página."
         >
           <Select name="mode" defaultValue="rapido">
             <option value="rapido">Rápido — as perguntas essenciais</option>
+            <option value="completo">Completo — 8 módulos aprofundados</option>
           </Select>
         </Field>
         {state.error && (

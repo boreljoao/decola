@@ -1,4 +1,5 @@
 import "server-only";
+import { processCreativeSet } from "@/features/creatives/process";
 import { processGenerationJob } from "@/features/generation/pipeline";
 import { sendEmail } from "@/server/integrations/email";
 import { registerJobHandler } from "./index";
@@ -15,6 +16,7 @@ export function registerAllJobHandlers(): void {
   registered = true;
 
   registerJobHandler("generate_page", processGenerationJob);
+  registerJobHandler("generate_creatives", processCreativeSet);
 
   registerJobHandler("send_email", async (payload) => {
     const result = await sendEmail({

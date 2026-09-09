@@ -8,6 +8,7 @@ import {
   type FinishResult,
 } from "./actions";
 import {
+  MODULE_LABELS,
   visibleQuestions,
   type BriefingAnswers,
   type QuestionDef,
@@ -138,6 +139,11 @@ export function BriefingWizard({
       {question ? (
         <Card>
           <p className="text-xs font-semibold uppercase tracking-wider text-electric-600">
+            {mode === "completo" && (
+              <span className="mr-2 rounded-full bg-electric-600/10 px-2 py-0.5">
+                {MODULE_LABELS[question.module]}
+              </span>
+            )}
             Pergunta {index + 1} de {questions.length}
           </p>
           <h2

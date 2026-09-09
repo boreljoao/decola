@@ -2,7 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // Pacotes com binários/WASM que não devem ser empacotados pelo bundler.
-  serverExternalPackages: ["@electric-sql/pglite", "postgres"],
+  serverExternalPackages: [
+    "@electric-sql/pglite",
+    "postgres",
+    "@resvg/resvg-js",
+    // satori resolve wasm (yoga/harfbuzz) por caminho relativo — não empacotar.
+    "satori",
+  ],
   // Cabeçalhos de segurança baseline (spec §16). CSP completa com nonce entra
   // junto com as integrações de terceiros que a exigirem.
   async headers() {

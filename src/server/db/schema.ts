@@ -388,6 +388,65 @@ export const generationSteps = pgTable(
   (t) => [uniqueIndex("generation_steps_unique").on(t.generationJobId, t.step)],
 );
 
+// ── Criativos ────────────────────────────────────────────────────────────────
+
+export const creativeSetStatus = pgEnum("creative_set_status", [
+  "queued",
+  "running",
+  "completed",
+  "failed",
+]);
+
+export const creativeSets = pgTable(
+  "creative_sets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    pageId: uuid("page_id")
+      .notNull()
+      .references(() => pages.id, { onDelete: "cascade" }),
+    /** Versão da página no momento da geração — mudanças de oferta alertam desatualização. */
+    pageVersionId: uuid("page_version_id")
+      .notNull()
+      .references(() => pageVersions.id),
+    status: creativeSetStatus("status").notNull().default("queued"),
+    /** Propostas de copy tipadas (meta/google/tiktok) validadas por Zod. */
+    payload: jsonb("payload"),
+    error: text("error"),
+    createdBy: uuid("created_by").references(() => profiles.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (t) => [index("creative_sets_page_idx").on(t.pageId)],
+);
+
+export const creativeAssets = pgTable(
+  "creative_assets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    setId: uuid("set_id")
+      .notNull()
+      .references(() => creativeSets.id, { onDelete: "cascade" }),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    format: text("format").notNull(),
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    filePath: text("file_path").notNull(),
+    bytes: integer("bytes").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("creative_assets_set_idx").on(t.setId)],
+);
+
 // ── Fila durável ─────────────────────────────────────────────────────────────
 
 export const jobs = pgTable(
