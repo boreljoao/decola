@@ -1346,6 +1346,36 @@ export const emailDeliveries = pgTable(
   (t) => [uniqueIndex("email_dedup_unique").on(t.dedupKey)],
 );
 
+/**
+ * Chaves de API (spec §15). O segredo é exibido UMA VEZ na criação e guardado
+ * só como hash — vazamento do banco não permite usar a chave.
+ */
+export const apiKeys = pgTable(
+  "api_keys",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    /** Prefixo visível para o usuário reconhecer a chave na lista. */
+    prefix: text("prefix").notNull(),
+    keyHash: text("key_hash").notNull().unique(),
+    /** Escopos mínimos: ["pages:read", "metrics:read", "leads:read", "leads:write"] */
+    scopes: jsonb("scopes").notNull(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdBy: uuid("created_by").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("api_keys_workspace_idx").on(t.workspaceId)],
+);
+
 export const auditLog = pgTable(
   "audit_log",
   {
