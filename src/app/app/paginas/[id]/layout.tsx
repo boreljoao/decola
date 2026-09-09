@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ProjectTabs } from "@/features/app-shell/nav";
 import { loadProject } from "@/features/projects/queries";
 
 const TABS = [
@@ -38,20 +39,7 @@ export default async function ProjectLayout({
           {data.project.name}
         </h1>
       </div>
-      <nav
-        aria-label="Etapas do projeto"
-        className="flex flex-wrap gap-1 border-b border-ink-900/10"
-      >
-        {TABS.map((tab) => (
-          <Link
-            key={tab.slug}
-            href={`/app/paginas/${id}/${tab.slug}`}
-            className="rounded-t-lg px-4 py-2.5 text-sm font-medium text-ink-600 hover:bg-ink-900/5 hover:text-ink-900"
-          >
-            {tab.label}
-          </Link>
-        ))}
-      </nav>
+      <ProjectTabs projectId={id} tabs={TABS} />
       <div>{children}</div>
     </div>
   );

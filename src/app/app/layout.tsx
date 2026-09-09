@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { AppNav } from "@/features/app-shell/nav";
 
 // Área autenticada: sempre renderizada por requisição (sessão via cookies).
 export const dynamic = "force-dynamic";
@@ -25,7 +26,7 @@ export default async function AppLayout({
           identificadas.
         </p>
       )}
-      <header className="border-b border-ink-900/10 bg-card">
+      <header className="sticky top-0 z-40 border-b border-ink-900/8 bg-card/85 backdrop-blur-lg">
         <div className="mx-auto flex w-full max-w-[1240px] items-center justify-between gap-4 px-6 py-4">
           <div className="flex items-center gap-8">
             <Link
@@ -35,56 +36,31 @@ export default async function AppLayout({
             >
               decola<span className="text-electric-600">✦</span>
             </Link>
-            <nav className="hidden items-center gap-1 sm:flex" aria-label="Principal">
-              <Link
-                href="/app"
-                className="rounded-lg px-3 py-1.5 text-sm font-medium text-ink-600 hover:bg-ink-900/5 hover:text-ink-900"
-              >
-                Minhas páginas
-              </Link>
-              <Link
-                href="/app/criar"
-                className="rounded-lg px-3 py-1.5 text-sm font-medium text-ink-600 hover:bg-ink-900/5 hover:text-ink-900"
-              >
-                Criar página
-              </Link>
-              <Link
-                href="/app/diario-de-bordo"
-                className="rounded-lg px-3 py-1.5 text-sm font-medium text-ink-600 hover:bg-ink-900/5 hover:text-ink-900"
-              >
-                Diário de Bordo
-              </Link>
-              <Link
-                href="/app/marketplace"
-                className="rounded-lg px-3 py-1.5 text-sm font-medium text-ink-600 hover:bg-ink-900/5 hover:text-ink-900"
-              >
-                Marketplace
-              </Link>
-              <Link
-                href="/app/cobranca"
-                className="rounded-lg px-3 py-1.5 text-sm font-medium text-ink-600 hover:bg-ink-900/5 hover:text-ink-900"
-              >
-                Cobrança
-              </Link>
-            </nav>
+            <AppNav />
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
             <Link
               href="/app/equipe"
-              className="hidden rounded-lg px-3 py-1.5 text-sm font-medium text-ink-600 hover:bg-ink-900/5 sm:inline"
+              className="hidden rounded-lg px-3 py-1.5 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-900/5 hover:text-ink-900 sm:inline"
             >
               Equipe
             </Link>
             <Link
               href="/app/conta"
-              className="hidden text-sm text-ink-600 hover:text-ink-900 sm:inline"
+              className="hidden items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-900/5 hover:text-ink-900 sm:inline-flex"
             >
+              <span
+                aria-hidden="true"
+                className="flex h-6 w-6 items-center justify-center rounded-full bg-electric-600/10 text-xs font-bold text-electric-700"
+              >
+                {ctx.workspaceName.charAt(0).toUpperCase()}
+              </span>
               {ctx.workspaceName}
             </Link>
             <form action={signOutAction}>
               <button
                 type="submit"
-                className="rounded-lg px-3 py-1.5 text-sm font-medium text-ink-600 hover:bg-ink-900/5"
+                className="rounded-lg px-3 py-1.5 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-900/5 hover:text-ink-900"
               >
                 Sair
               </button>

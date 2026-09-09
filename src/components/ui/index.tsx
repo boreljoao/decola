@@ -10,14 +10,14 @@ type ButtonVariant = "primary" | "commercial" | "secondary" | "ghost" | "danger"
 
 const BUTTON_STYLES: Record<ButtonVariant, string> = {
   primary:
-    "bg-electric-600 text-white hover:bg-electric-700 disabled:bg-electric-600/50",
+    "bg-electric-600 text-white shadow-sm shadow-electric-600/25 hover:bg-electric-700 hover:shadow-md hover:shadow-electric-600/30 active:translate-y-px disabled:bg-electric-600/50 disabled:shadow-none",
   commercial:
-    "bg-ember-500 text-night-950 hover:bg-ember-600 disabled:bg-ember-500/50",
+    "bg-ember-500 text-night-950 shadow-sm shadow-ember-500/30 hover:bg-ember-600 hover:shadow-md hover:shadow-ember-500/35 active:translate-y-px disabled:bg-ember-500/50 disabled:shadow-none",
   secondary:
-    "border border-ink-900/15 bg-white text-ink-900 hover:bg-paper disabled:opacity-50",
-  ghost: "text-ink-600 hover:bg-ink-900/5 disabled:opacity-50",
+    "border border-ink-900/15 bg-white text-ink-900 hover:border-ink-900/25 hover:bg-paper active:translate-y-px disabled:opacity-50",
+  ghost: "text-ink-600 hover:bg-ink-900/5 hover:text-ink-900 disabled:opacity-50",
   danger:
-    "border border-danger-600/30 text-danger-600 hover:bg-danger-600/5 disabled:opacity-50",
+    "border border-danger-600/30 text-danger-600 hover:border-danger-600/50 hover:bg-danger-600/5 active:translate-y-px disabled:opacity-50",
 };
 
 export function Button({
@@ -29,7 +29,7 @@ export function Button({
     <button
       {...props}
       className={cx(
-        "inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed",
+        "inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-150 disabled:cursor-not-allowed",
         BUTTON_STYLES[variant],
         className,
       )}
@@ -70,7 +70,7 @@ export function Input({
     <input
       {...props}
       className={cx(
-        "rounded-xl border border-ink-900/15 bg-white px-3.5 py-2.5 text-sm text-ink-900 placeholder:text-ink-400 focus:border-electric-500",
+        "rounded-xl border border-ink-900/15 bg-white px-3.5 py-2.5 text-sm text-ink-900 transition-colors placeholder:text-ink-400 hover:border-ink-900/25 focus:border-electric-500",
         className,
       )}
     />
@@ -85,7 +85,7 @@ export function Textarea({
     <textarea
       {...props}
       className={cx(
-        "rounded-xl border border-ink-900/15 bg-white px-3.5 py-2.5 text-sm text-ink-900 placeholder:text-ink-400 focus:border-electric-500",
+        "rounded-xl border border-ink-900/15 bg-white px-3.5 py-2.5 text-sm text-ink-900 transition-colors placeholder:text-ink-400 hover:border-ink-900/25 focus:border-electric-500",
         className,
       )}
     />
@@ -117,7 +117,7 @@ export function Card({
   return (
     <div
       className={cx(
-        "rounded-2xl border border-ink-900/10 bg-card p-6 shadow-[var(--shadow-lift)]",
+        "rounded-2xl border border-ink-900/8 bg-card p-6 shadow-[var(--shadow-lift)] transition-shadow duration-200 hover:shadow-[0_2px_4px_rgb(10_14_26/0.05),0_12px_32px_-10px_rgb(10_14_26/0.16)]",
         className,
       )}
     >
