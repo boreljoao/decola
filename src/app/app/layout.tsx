@@ -49,6 +49,12 @@ export default async function AppLayout({
                 Criar página
               </Link>
               <Link
+                href="/app/diario-de-bordo"
+                className="rounded-lg px-3 py-1.5 text-sm font-medium text-ink-600 hover:bg-ink-900/5 hover:text-ink-900"
+              >
+                Diário de Bordo
+              </Link>
+              <Link
                 href="/app/cobranca"
                 className="rounded-lg px-3 py-1.5 text-sm font-medium text-ink-600 hover:bg-ink-900/5 hover:text-ink-900"
               >

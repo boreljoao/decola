@@ -11,6 +11,7 @@ const TABS = [
   { slug: "publicacao", label: "Publicação" },
   { slug: "leads", label: "Leads" },
   { slug: "metricas", label: "Métricas" },
+  { slug: "experimentos", label: "Voo Contínuo" },
 ] as const;
 
 export default async function ProjectLayout({

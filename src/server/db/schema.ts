@@ -811,6 +811,123 @@ export const analyticsEvents = pgTable(
   ],
 );
 
+// ── Voo Contínuo (experimentos) ──────────────────────────────────────────────
+
+export const experimentStatus = pgEnum("experiment_status", [
+  "draft",
+  "awaiting_data",
+  "ready",
+  "running",
+  "paused",
+  "inconclusive",
+  "completed",
+  "rolled_back",
+]);
+
+export const experiments = pgTable(
+  "experiments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    pageId: uuid("page_id")
+      .notNull()
+      .references(() => pages.id, { onDelete: "cascade" }),
+    status: experimentStatus("status").notNull().default("draft"),
+    /** Hipótese em linguagem do usuário: o que se espera e por quê. */
+    hypothesis: text("hypothesis").notNull(),
+    /** Evento contado como sucesso (ex.: whatsapp_click). */
+    goalEvent: text("goal_event").notNull(),
+    /** Amostra mínima por variante definida ANTES do início (spec §13.2). */
+    minSamplesPerVariant: integer("min_samples_per_variant").notNull(),
+    /** Efeito mínimo detectável, em pontos percentuais. */
+    minDetectableEffectPp: integer("min_detectable_effect_pp").notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+    /** Conclusão textual honesta, inclusive "inconclusivo". */
+    conclusion: text("conclusion"),
+    winnerVariantId: uuid("winner_variant_id"),
+    createdBy: uuid("created_by").references(() => profiles.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("experiments_page_idx").on(t.pageId)],
+);
+
+export const experimentVariants = pgTable(
+  "experiment_variants",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    experimentId: uuid("experiment_id")
+      .notNull()
+      .references(() => experiments.id, { onDelete: "cascade" }),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    /** "control" | "variant" */
+    role: text("role").notNull(),
+    label: text("label").notNull(),
+    /** Versão da página servida nesta variante (imutável). */
+    pageVersionId: uuid("page_version_id")
+      .notNull()
+      .references(() => pageVersions.id),
+    exposures: integer("exposures").notNull().default(0),
+    conversions: integer("conversions").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("experiment_variants_experiment_idx").on(t.experimentId)],
+);
+
+/** Atribuição estável: a mesma sessão vê sempre a mesma variante. */
+export const experimentAssignments = pgTable(
+  "experiment_assignments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    experimentId: uuid("experiment_id")
+      .notNull()
+      .references(() => experiments.id, { onDelete: "cascade" }),
+    variantId: uuid("variant_id")
+      .notNull()
+      .references(() => experimentVariants.id, { onDelete: "cascade" }),
+    assignmentKey: text("assignment_key").notNull(),
+    converted: boolean("converted").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("experiment_assignments_unique").on(
+      t.experimentId,
+      t.assignmentKey,
+    ),
+  ],
+);
+
+/** Diário de Bordo: relatório mensal idempotente por página/mês. */
+export const monthlyReports = pgTable(
+  "monthly_reports",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    pageId: uuid("page_id")
+      .notNull()
+      .references(() => pages.id, { onDelete: "cascade" }),
+    /** AAAA-MM no fuso America/Sao_Paulo. */
+    period: text("period").notNull(),
+    data: jsonb("data").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [uniqueIndex("monthly_reports_unique").on(t.pageId, t.period)],
+);
+
 // ── Operação ─────────────────────────────────────────────────────────────────
 
 export const emailDeliveries = pgTable(

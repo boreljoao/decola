@@ -19,9 +19,11 @@ import {
 import { PageRenderer } from "@/features/pages/renderer";
 import {
   aiEditProposalAction,
+  getAiEditCostInfo,
   restoreVersionAction,
   saveManualVersionAction,
 } from "./actions";
+import { AI_EDIT_CREDIT_COST } from "./pricing";
 import {
   ADDABLE_TYPES,
   SECTION_FIELDS,
@@ -748,11 +750,27 @@ function AiPanel({
   const [instruction, setInstruction] = useState("");
   const [allowCommercial, setAllowCommercial] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [cost, setCost] = useState<number>(AI_EDIT_CREDIT_COST);
+  const [available, setAvailable] = useState<number | null>(null);
   const [result, setResult] = useState<
     | { kind: "proposal"; document: PageDocument; changed: string[]; reverted: string[] }
     | { kind: "error"; message: string }
     | null
   >(null);
+
+  // Saldo real antes da operação paga (spec §9: exibir custo e saldo).
+  useEffect(() => {
+    if (!aiAvailable) return;
+    let active = true;
+    void getAiEditCostInfo(pageId).then((info) => {
+      if (!active) return;
+      setCost(info.cost);
+      setAvailable(info.available);
+    });
+    return () => {
+      active = false;
+    };
+  }, [aiAvailable, pageId]);
 
   if (!aiAvailable) {
     return (
@@ -784,6 +802,9 @@ function AiPanel({
           changed: response.changedSectionIds,
           reverted: response.protectedReverted,
         });
+        setAvailable((current) =>
+          current == null ? current : Math.max(0, current - response.creditsCharged),
+        );
       } else {
         setResult({ kind: "error", message: response.message });
       }
@@ -815,8 +836,15 @@ function AiPanel({
         esta permissão, esses campos são preservados automaticamente.
       </label>
       <p className="text-xs text-ink-600">
-        Custo: <strong>sem cobrança nesta fase</strong> — a política de créditos
-        (Combustível) entra junto com o fluxo de receita.
+        Custo: <strong>{cost} crédito</strong> de Combustível, cobrado quando
+        uma proposta válida for entregue. Se o motor falhar, nada é cobrado;
+        descartar uma proposta válida não devolve o crédito.
+        {available != null && (
+          <>
+            {" "}
+            Saldo atual: <strong>{available}</strong>.
+          </>
+        )}
       </p>
       <Button onClick={askAi} disabled={pending || instruction.trim().length < 4}>
         {pending ? "Gerando proposta…" : "Gerar proposta"}

@@ -6,10 +6,17 @@ import {
   validatePageDocument,
   type PageDocument,
 } from "@/features/generation/page-document";
+import {
+  commitCredits,
+  getBalance,
+  releaseCredits,
+  reserveCredits,
+} from "@/features/billing/credits";
 import { requireWorkspace, assertRole } from "@/server/auth";
 import { getDb } from "@/server/db";
 import { auditLog, pages, pageVersions } from "@/server/db/schema";
 import { proposeAiEdit, type AiEditResult } from "./ai-edit";
+import { AI_EDIT_CREDIT_COST } from "./pricing";
 
 /**
  * Ações do editor (spec §9): salvar cria uma NOVA versão (nunca publica);
@@ -167,8 +174,8 @@ const aiEditInput = z.object({
 });
 
 export type AiEditActionResult =
-  | (AiEditResult & { ok: true })
-  | { ok: false; message: string };
+  | (AiEditResult & { ok: true; creditsCharged: number })
+  | { ok: false; message: string; insufficientCredits?: boolean };
 
 export async function aiEditProposalAction(
   raw: unknown,
@@ -177,6 +184,8 @@ export async function aiEditProposalAction(
   if (!parsed.success) {
     return { ok: false, message: "Pedido inválido." };
   }
+
+  let operationKey: string | undefined;
   try {
     const { db, page } = await loadPageAuthorized(parsed.data.pageId);
     if (page.currentVersionId !== parsed.data.baseVersionId) {
@@ -196,17 +205,51 @@ export async function aiEditProposalAction(
       return { ok: false, message: "A versão base está inválida." };
     }
 
+    // Reserva ANTES de chamar o provedor pago (spec §12.2). Cada pedido é uma
+    // operação distinta: instruções diferentes não compartilham reserva.
+    operationKey = `ai_edit:${crypto.randomUUID()}`;
+    const reservation = await reserveCredits({
+      workspaceId: page.workspaceId,
+      amount: AI_EDIT_CREDIT_COST,
+      operationKey,
+    });
+    if (!reservation.ok) {
+      return {
+        ok: false,
+        insufficientCredits: true,
+        message: `Combustível insuficiente: esta edição custa ${AI_EDIT_CREDIT_COST} crédito e você tem ${reservation.available}.`,
+      };
+    }
+
     const result = await proposeAiEdit({
       base: validation.document as PageDocument,
       instruction: parsed.data.instruction,
       allowCommercialChanges: parsed.data.allowCommercialChanges,
     });
-    if (!result.ok) return { ok: false, message: result.message };
-    return result;
+
+    if (!result.ok) {
+      // Falha do motor não cobra.
+      await releaseCredits(operationKey);
+      return { ok: false, message: result.message };
+    }
+
+    // Proposta válida entregue: é aqui que o crédito é consumido.
+    await commitCredits(operationKey);
+    return { ...result, creditsCharged: AI_EDIT_CREDIT_COST };
   } catch (err) {
+    if (operationKey) await releaseCredits(operationKey).catch(() => {});
     return {
       ok: false,
       message: err instanceof Error ? err.message : "Falha na edição por IA.",
     };
   }
+}
+
+/** Saldo e custo, para a UI mostrar antes de o usuário pedir a edição. */
+export async function getAiEditCostInfo(
+  pageId: string,
+): Promise<{ cost: number; available: number }> {
+  const { page } = await loadPageAuthorized(pageId);
+  const balance = await getBalance(page.workspaceId);
+  return { cost: AI_EDIT_CREDIT_COST, available: balance.available };
 }
