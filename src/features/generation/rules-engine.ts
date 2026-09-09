@@ -184,8 +184,26 @@ function sentenceCase(text: string): string {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
+/** Rebaixa só a primeira letra, preservando marcas como "WhatsApp" no meio. */
+function lowerFirst(text: string): string {
+  const t = text.trim();
+  return t.charAt(0).toLowerCase() + t.slice(1);
+}
+
 function stripFinalDot(text: string): string {
   return text.trim().replace(/[.!]+$/, "");
+}
+
+/** Trunca em limite de palavra, sem cortar frase no meio de um termo. */
+function truncateAtWord(text: string, max: number): string {
+  const t = text.trim();
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > max * 0.5 ? cut.slice(0, lastSpace) : cut).replace(
+    /[,;:\s]+$/,
+    "",
+  );
 }
 
 /** Divide o texto da dor em até 3 itens (frases ou vírgulas). */
@@ -282,10 +300,14 @@ export function generatePageDocument(input: RulesEngineInput): PageDocument {
   };
   const angle = `Página focada em ${emotionAngle[emocoes[0]] ?? emotionAngle.confianca}, conduzindo o visitante da dor (“${stripFinalDot(dor).slice(0, 80)}…”) até a ação: ${ctaLabel}.`;
 
+  const primeiraFraseDor = truncateAtWord(
+    stripFinalDot(dor).split(/[.;!?]/)[0],
+    70,
+  );
   const heroHeadlines = [
     `${stripFinalDot(oferta)}, sem complicação`,
-    `${nome}: ${stripFinalDot(oferta).toLowerCase()}`,
-    `Chega de ${stripFinalDot(dor).toLowerCase().slice(0, 60)}`,
+    `${nome} — ${stripFinalDot(oferta)}`,
+    `Chega de ${primeiraFraseDor.charAt(0).toLowerCase()}${primeiraFraseDor.slice(1)}`,
   ] as const;
   const headline = seededPick(seed, "headline", heroHeadlines);
 
@@ -339,7 +361,11 @@ export function generatePageDocument(input: RulesEngineInput): PageDocument {
     props: {
       title: `Como ${nome} resolve isso`,
       description: sentenceCase(
-        `${stripFinalDot(descricao)}. ${diferencial ? `E tem um detalhe que faz diferença: ${stripFinalDot(diferencial).toLowerCase()}.` : ""}`,
+        `${stripFinalDot(descricao)}. ${
+          diferencial
+            ? `E tem um detalhe que faz diferença: ${lowerFirst(stripFinalDot(diferencial))}.`
+            : ""
+        }`,
       ).slice(0, 2000),
     },
   });
@@ -440,7 +466,7 @@ export function generatePageDocument(input: RulesEngineInput): PageDocument {
         `Fale com ${nome} agora`,
         "O próximo passo é seu",
       ] as const).slice(0, 200),
-      subtitle: `Sem compromisso: ${stripFinalDot(oferta).toLowerCase()}.`.slice(0, 600),
+      subtitle: `Sem compromisso: ${lowerFirst(stripFinalDot(oferta))}.`.slice(0, 600),
       ctaLabel,
     },
   });
