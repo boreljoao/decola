@@ -10,6 +10,8 @@ import {
   SECTION_PAD,
 } from "./conversion-utils";
 import { AnalyticsBeacon, LeadForm, TrackedCta } from "./conversion";
+import { ConsentGate } from "./consent";
+import type { IntegrationKind } from "@/features/integrations/definitions";
 
 /**
  * Renderer da biblioteca proprietária (spec §8.2/§8.3): monta exclusivamente
@@ -27,6 +29,12 @@ interface RenderContext {
   showBadge: boolean;
   /** URL do app para o link do badge (nunca inventar domínio). */
   appUrl?: string;
+  /** Integrações conectadas pelo dono — carregadas só com consentimento. */
+  integrations?: Array<{
+    kind: IntegrationKind;
+    id: string;
+    category: "analytics" | "marketing";
+  }>;
 }
 
 const FONT_VAR: Record<string, string> = {
@@ -587,7 +595,10 @@ export function PageRenderer(ctx: RenderContext) {
   return (
     <div style={style} className="min-h-screen">
       {!ctx.preview && (
-        <AnalyticsBeacon pageId={ctx.pageId} pageVersionId={ctx.pageVersionId} />
+        <>
+          <AnalyticsBeacon pageId={ctx.pageId} pageVersionId={ctx.pageVersionId} />
+          <ConsentGate integrations={ctx.integrations ?? []} />
+        </>
       )}
       <main>
         {doc.sections.map((section) => (

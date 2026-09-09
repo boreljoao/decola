@@ -1007,6 +1007,192 @@ export const monthlyReports = pgTable(
   (t) => [uniqueIndex("monthly_reports_unique").on(t.pageId, t.period)],
 );
 
+// ── Marketplace de profissionais ─────────────────────────────────────────────
+
+export const applicationStatus = pgEnum("application_status", [
+  "submitted",
+  "approved",
+  "rejected",
+]);
+
+export const serviceRequestStatus = pgEnum("service_request_status", [
+  "open",
+  "proposed",
+  "contracted",
+  "delivered",
+  "closed",
+  "canceled",
+]);
+
+/** Candidatura de profissional — persistida e revisada por admin (spec §15). */
+export const professionalApplications = pgTable(
+  "professional_applications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    profileId: uuid("profile_id").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
+    name: text("name").notNull(),
+    email: text("email").notNull(),
+    phone: text("phone"),
+    specialty: text("specialty").notNull(),
+    experience: text("experience").notNull(),
+    portfolioUrl: text("portfolio_url"),
+    status: applicationStatus("status").notNull().default("submitted"),
+    reviewedBy: uuid("reviewed_by").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
+    reviewNote: text("review_note"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  },
+  (t) => [index("professional_applications_status_idx").on(t.status)],
+);
+
+/** Perfil público só existe após aprovação — nunca perfis fictícios. */
+export const professionalProfiles = pgTable(
+  "professional_profiles",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    profileId: uuid("profile_id")
+      .notNull()
+      .unique()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    applicationId: uuid("application_id").references(
+      () => professionalApplications.id,
+      { onDelete: "set null" },
+    ),
+    displayName: text("display_name").notNull(),
+    specialty: text("specialty").notNull(),
+    bio: text("bio").notNull(),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("professional_profiles_active_idx").on(t.active)],
+);
+
+export const serviceRequests = pgTable(
+  "service_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id").references(() => projects.id, {
+      onDelete: "set null",
+    }),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => profiles.id),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    status: serviceRequestStatus("status").notNull().default("open"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("service_requests_workspace_idx").on(t.workspaceId)],
+);
+
+export const proposals = pgTable(
+  "proposals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    requestId: uuid("request_id")
+      .notNull()
+      .references(() => serviceRequests.id, { onDelete: "cascade" }),
+    professionalId: uuid("professional_id")
+      .notNull()
+      .references(() => professionalProfiles.id, { onDelete: "cascade" }),
+    priceCents: integer("price_cents").notNull(),
+    deliveryDays: integer("delivery_days").notNull(),
+    scope: text("scope").notNull(),
+    accepted: boolean("accepted").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("proposals_request_idx").on(t.requestId),
+    // Uma proposta por profissional em cada solicitação.
+    uniqueIndex("proposals_unique").on(t.requestId, t.professionalId),
+  ],
+);
+
+/** Mensagens de contato comercial (/contato e /agencias). */
+export const contactMessages = pgTable("contact_messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  kind: text("kind").notNull(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  company: text("company"),
+  message: text("message").notNull(),
+  handledAt: timestamp("handled_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ── Integrações externas ─────────────────────────────────────────────────────
+
+export const integrationStatus = pgEnum("integration_status", [
+  "not_connected",
+  "connected",
+  "invalid",
+  "degraded",
+]);
+
+export const integrationConnections = pgTable(
+  "integration_connections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    /** "meta_pixel" | "google_analytics" | "rd_station" */
+    kind: text("kind").notNull(),
+    status: integrationStatus("status").notNull().default("not_connected"),
+    /**
+     * Config pública (ex.: ID do pixel). Segredos NUNCA voltam em texto puro
+     * para a UI — quando existirem, ficam em coluna separada e mascarada.
+     */
+    config: jsonb("config").notNull(),
+    lastCheckedAt: timestamp("last_checked_at", { withTimezone: true }),
+    lastError: text("last_error"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [uniqueIndex("integration_unique").on(t.workspaceId, t.kind)],
+);
+
+/** Registro de consentimento do visitante (spec §16: versão + escolha). */
+export const consents = pgTable(
+  "consents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    pageId: uuid("page_id")
+      .notNull()
+      .references(() => pages.id, { onDelete: "cascade" }),
+    /** Chave pseudônima do visitante; sem PII. */
+    visitorKey: text("visitor_key").notNull(),
+    analytics: boolean("analytics").notNull(),
+    marketing: boolean("marketing").notNull(),
+    policyVersion: text("policy_version").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [uniqueIndex("consents_unique").on(t.pageId, t.visitorKey)],
+);
+
 // ── Operação ─────────────────────────────────────────────────────────────────
 
 export const emailDeliveries = pgTable(

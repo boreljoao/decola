@@ -4,6 +4,18 @@ const NAV = [
   { href: "/como-funciona", label: "Como funciona" },
   { href: "/exemplos", label: "Exemplos" },
   { href: "/precos", label: "Preços" },
+  { href: "/profissionais", label: "Profissionais" },
+] as const;
+
+const FOOTER_COMPANY = [
+  { href: "/agencias", label: "Para agências" },
+  { href: "/contato", label: "Contato" },
+] as const;
+
+const FOOTER_LEGAL = [
+  { href: "/termos", label: "Termos de uso" },
+  { href: "/privacidade", label: "Privacidade" },
+  { href: "/cookies", label: "Cookies" },
 ] as const;
 
 export default function MarketingLayout({
@@ -80,20 +92,31 @@ export default function MarketingLayout({
               </li>
             </ul>
           </nav>
-          <div className="text-sm">
-            <p className="font-semibold text-mist-300">Legal</p>
-            <ul className="mt-3 grid gap-2 text-mist-500">
-              <li>
-                <Link href="/termos" className="hover:text-mist-100">
-                  Termos de uso
-                </Link>
-              </li>
-              <li>
-                <Link href="/privacidade" className="hover:text-mist-100">
-                  Privacidade
-                </Link>
-              </li>
-            </ul>
+          <div className="grid gap-6 text-sm sm:grid-cols-2">
+            <nav aria-label="Empresa">
+              <p className="font-semibold text-mist-300">Empresa</p>
+              <ul className="mt-3 grid gap-2 text-mist-500">
+                {FOOTER_COMPANY.map((item) => (
+                  <li key={item.href}>
+                    <Link href={item.href} className="hover:text-mist-100">
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+            <nav aria-label="Legal">
+              <p className="font-semibold text-mist-300">Legal</p>
+              <ul className="mt-3 grid gap-2 text-mist-500">
+                {FOOTER_LEGAL.map((item) => (
+                  <li key={item.href}>
+                    <Link href={item.href} className="hover:text-mist-100">
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
           </div>
         </div>
         <div className="border-t border-white/5 py-5 text-center text-xs text-mist-700">
