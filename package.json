@@ -10,6 +10,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
     "worker": "node -e \"setInterval(()=>fetch('http://localhost:3000/api/jobs/drain',{method:'POST'}).catch(()=>{}),5000)\""
   },
   "dependencies": {

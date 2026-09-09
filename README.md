@@ -25,10 +25,11 @@ Jornada completa local: criar conta → briefing rápido → geração → previ
 | `npm run typecheck` | `next typegen` + `tsc --noEmit` |
 | `npm test` | Testes (Vitest) |
 | `npm run db:generate` | Gera migrations a partir de `src/server/db/schema.ts` |
+| `npm run db:migrate` | Aplica as migrations em um Postgres externo (`DATABASE_URL`) |
 
 ## Produção
 
-Configuração obrigatória e passo a passo em [docs/activation-checklist.md](docs/activation-checklist.md). Sem `DATABASE_URL`, `SESSION_SECRET` e Supabase Auth, o boot de produção falha de propósito — não existe fallback silencioso para mocks (spec §20).
+Passo a passo de deploy (GitHub → Supabase → Vercel) em [docs/deploy.md](docs/deploy.md); estado de cada integração em [docs/activation-checklist.md](docs/activation-checklist.md). Sem `DATABASE_URL`, `SESSION_SECRET` e Supabase Auth, o boot de produção falha de propósito — não existe fallback silencioso para mocks (spec §20).
 
 ## Documentação
 
@@ -36,5 +37,6 @@ Configuração obrigatória e passo a passo em [docs/activation-checklist.md](do
 - [docs/decisions.md](docs/decisions.md) — decisões D-001…D-013 com contexto
 - [docs/implementation-plan.md](docs/implementation-plan.md) — fases A–G
 - [docs/requirements-matrix.md](docs/requirements-matrix.md) — requisito → status honesto
+- [docs/deploy.md](docs/deploy.md) — subir para o GitHub e colocar no ar
 - [docs/activation-checklist.md](docs/activation-checklist.md) — integrações e ativação
 - [docs/next-actions.md](docs/next-actions.md) — checkpoint de retomada
