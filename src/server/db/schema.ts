@@ -149,6 +149,25 @@ export const sessions = pgTable(
   (t) => [index("sessions_profile_idx").on(t.profileId)],
 );
 
+export const invitationStatus = pgEnum("invitation_status", [
+  "pending",
+  "accepted",
+  "revoked",
+  "expired",
+]);
+
+export const privacyRequestKind = pgEnum("privacy_request_kind", [
+  "export",
+  "delete",
+]);
+
+export const privacyRequestStatus = pgEnum("privacy_request_status", [
+  "pending",
+  "processing",
+  "completed",
+  "failed",
+]);
+
 export const workspaces = pgTable("workspaces", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
@@ -183,6 +202,66 @@ export const memberships = pgTable(
     primaryKey({ columns: [t.workspaceId, t.profileId] }),
     index("memberships_profile_idx").on(t.profileId),
   ],
+);
+
+/**
+ * Convites de equipe (spec §15). O token só existe em hash: o valor original
+ * vive apenas no link enviado, então vazamento do banco não permite aceitar.
+ */
+export const invitations = pgTable(
+  "invitations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    role: workspaceRole("role").notNull(),
+    tokenHash: text("token_hash").notNull().unique(),
+    status: invitationStatus("status").notNull().default("pending"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    invitedBy: uuid("invited_by").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
+    acceptedBy: uuid("accepted_by").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("invitations_workspace_idx").on(t.workspaceId),
+    index("invitations_email_idx").on(t.email),
+  ],
+);
+
+/** Solicitações de exportação/exclusão de dados (spec §16). */
+export const privacyRequests = pgTable(
+  "privacy_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    profileId: uuid("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    workspaceId: uuid("workspace_id").references(() => workspaces.id, {
+      onDelete: "set null",
+    }),
+    kind: privacyRequestKind("kind").notNull(),
+    status: privacyRequestStatus("status").notNull().default("pending"),
+    /** Arquivo de exportação, com expiração. */
+    resultKey: text("result_key"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    /** Exclusão agendada: janela para arrependimento antes da remoção. */
+    scheduledFor: timestamp("scheduled_for", { withTimezone: true }),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (t) => [index("privacy_requests_profile_idx").on(t.profileId)],
 );
 
 // ── Produto ──────────────────────────────────────────────────────────────────

@@ -63,9 +63,18 @@ export default async function AppLayout({
             </nav>
           </div>
           <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-ink-600 sm:inline">
+            <Link
+              href="/app/equipe"
+              className="hidden rounded-lg px-3 py-1.5 text-sm font-medium text-ink-600 hover:bg-ink-900/5 sm:inline"
+            >
+              Equipe
+            </Link>
+            <Link
+              href="/app/conta"
+              className="hidden text-sm text-ink-600 hover:text-ink-900 sm:inline"
+            >
               {ctx.workspaceName}
-            </span>
+            </Link>
             <form action={signOutAction}>
               <button
                 type="submit"
