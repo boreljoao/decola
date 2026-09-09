@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Aurora } from "@/components/marketing/aurora";
 import { Reveal } from "@/components/marketing/reveal";
+import { SpotlightCard } from "@/components/marketing/spotlight-card";
 import { formatBRL, PLANS, type PlanDef } from "@/config/commercial-policy";
 import { CheckoutButtons } from "@/features/billing/checkout-buttons";
 import {
@@ -47,11 +49,9 @@ function PlanCard({
 
   return (
     <Reveal delay={delay}>
-      <div
-        className={`relative flex h-full flex-col rounded-2xl border p-7 ${
-          plan.highlight
-            ? "border-ember-500/50 bg-night-800"
-            : "border-white/8 bg-night-850"
+      <SpotlightCard
+        className={`flex h-full flex-col p-7 ${
+          plan.highlight ? "ring-1 ring-ember-500/40" : ""
         }`}
       >
         {plan.highlight && (
@@ -108,7 +108,7 @@ function PlanCard({
             />
           )}
         </div>
-      </div>
+      </SpotlightCard>
     </Reveal>
   );
 }
@@ -117,11 +117,12 @@ export default function PrecosPage() {
   const providers = paymentAvailability();
   const ordered = [PLANS.free, PLANS.start, PLANS.pro, PLANS.business];
   return (
-    <main className="mx-auto w-full max-w-[1240px] px-5 py-16 sm:px-8">
+    <main className="relative mx-auto w-full max-w-[1240px] px-5 py-16 sm:px-8">
+      <Aurora className="opacity-60" />
       <Reveal>
         <h1
           style={{ fontFamily: "var(--font-sora)" }}
-          className="max-w-2xl text-balance text-4xl font-bold sm:text-5xl"
+          className="relative max-w-2xl text-balance text-4xl font-bold tracking-tight sm:text-5xl"
         >
           Preços diretos, sem letra miúda
         </h1>

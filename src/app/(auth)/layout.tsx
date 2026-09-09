@@ -1,16 +1,13 @@
 import Link from "next/link";
+import { Aurora, DotGrid } from "@/components/marketing/aurora";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col bg-night-900 text-mist-100">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed inset-0"
-        style={{
-          background:
-            "radial-gradient(50% 40% at 50% 0%, rgb(53 115 245 / 0.14), transparent)",
-        }}
-      />
+      <div className="fixed inset-0">
+        <Aurora />
+        <DotGrid />
+      </div>
       <header className="relative z-10 mx-auto w-full max-w-[1240px] px-6 py-6">
         <Link
           href="/"
@@ -21,7 +18,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </Link>
       </header>
       <main className="relative z-10 flex flex-1 items-center justify-center px-4 pb-16">
-        <div className="w-full max-w-md rounded-2xl border border-white/10 bg-night-850 p-8 shadow-2xl">
+        <div className="gradient-border w-full max-w-md rounded-2xl bg-night-850/80 p-8 shadow-2xl backdrop-blur-xl">
           {children}
         </div>
       </main>

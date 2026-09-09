@@ -1,13 +1,22 @@
 "use client";
 
-import { MotionConfig, motion } from "motion/react";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 /**
- * Reveal de rolagem com Motion, seguro para hidratação: a estrutura renderizada
- * é idêntica no servidor e no cliente, e `reducedMotion="user"` faz o Motion
- * respeitar `prefers-reduced-motion` internamente (spec §5.3) — transformações
- * são suprimidas e apenas opacidade anima para quem reduz movimento.
+ * Reveal de rolagem.
+ *
+ * Por que não usa `whileInView` do Motion: com `prefers-reduced-motion`
+ * ativo, a animação não roda e o elemento fica preso no estado inicial
+ * (`opacity: 0`) — a página inteira some para quem reduz movimento. Aqui o
+ * estado escondido é aplicado por JavaScript e SÓ quando três condições valem:
+ *
+ * 1. o usuário não pede movimento reduzido;
+ * 2. o elemento está abaixo da dobra (acima dela aparece direto, sem flash);
+ * 3. o JavaScript rodou.
+ *
+ * Se qualquer uma falhar, o conteúdo simplesmente aparece. O padrão é
+ * "visível"; a animação é o caso especial. O HTML do servidor não carrega
+ * estado escondido, então também não há divergência de hidratação.
  */
 export function Reveal({
   children,
@@ -18,17 +27,41 @@ export function Reveal({
   delay?: number;
   className?: string;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (typeof IntersectionObserver === "undefined") return;
+
+    // Já visível na carga: nada a animar, evita piscar.
+    const rect = element.getBoundingClientRect();
+    if (rect.top < window.innerHeight * 0.92) return;
+
+    element.classList.add("reveal-hidden");
+    element.style.transitionDelay = `${delay}s`;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            element.classList.remove("reveal-hidden");
+            observer.disconnect();
+          }
+        }
+      },
+      { rootMargin: "0px 0px -80px 0px" },
+    );
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, [delay]);
+
   return (
-    <MotionConfig reducedMotion="user">
-      <motion.div
-        className={className}
-        initial={{ opacity: 0, y: 24 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-80px" }}
-        transition={{ duration: 0.55, delay, ease: [0.21, 0.6, 0.35, 1] }}
-      >
-        {children}
-      </motion.div>
-    </MotionConfig>
+    <div ref={ref} className={`reveal ${className ?? ""}`}>
+      {children}
+    </div>
   );
 }
