@@ -2,28 +2,44 @@
 
 Formato (spec §20): integração → variáveis → configuração externa → webhook/callback → teste executado → estado → bloqueio.
 
+Estado em 2026-09-09. Cada capability é calculada por **configuração válida + adapter implementado + direitos do usuário** — nada aparece disponível na interface sem os três.
+
 | Integração | Variáveis | Configuração externa | Webhook/callback | Teste executado | Estado | Bloqueio |
 |---|---|---|---|---|---|---|
-| Banco (Supabase Postgres) | `DATABASE_URL` | Criar projeto Supabase; copiar connection string (pooler, porta 6543, `prepare=false` já aplicado) | — | Migrations rodam pela factory em dev e por deploy em prod (`drizzle/`) | implementada, aguardando configuração | Sem projeto Supabase criado |
-| Supabase Auth | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Habilitar e-mail/senha; configurar URL de redirect `<APP_URL>/auth/callback`; templates de e-mail pt-BR | Callback OAuth (rota a criar ao ativar Google) | Adapter compila e mapeia erros; sem projeto para teste real | implementada, aguardando configuração | Sem projeto Supabase |
-| Geração por IA (Anthropic) | `ANTHROPIC_API_KEY`, `GENERATION_MODEL` | Criar chave em console.anthropic.com | — | Saída validada pelo mesmo Zod do renderer; reparo único; classificação de falhas | implementada, aguardando configuração | Sem chave de API |
-| E-mail (Resend) | `RESEND_API_KEY`, `EMAIL_FROM` | Verificar domínio remetente no Resend | Bounce/complaint (a implementar ao ativar) | Transporte dev grava `.data/outbox-emails` (testado E2E) | implementada, aguardando configuração | Sem conta/domínio remetente |
-| Stripe (cartão/assinatura) | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Conta Stripe; produtos/preços conforme `commercial-policy` | `/api/webhooks/stripe` (a criar na Fase D) | SDK instalado; fluxo de checkout não construído | não implementada (Fase D) | Fase D não iniciada |
-| Mercado Pago (Pix) | `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET` | Conta MP; credenciais de produção | `/api/webhooks/mercadopago` (a criar na Fase D) | SDK instalado; fluxo não construído | não implementada (Fase D) | Fase D não iniciada |
-| Publicação em subdomínio (produção) | `PUBLISH_ROOT_DOMAIN`, `APP_URL` | Domínio raiz + wildcard DNS (`*.dominio`) apontando para a plataforma de deploy; certificado wildcard (Vercel: adicionar `*.dominio` ao projeto) | — | Roteamento por host testado em dev (`*.localhost:3000`) | implementada, aguardando configuração | Domínio de produção não registrado (não inventar domínio) |
-| Domínio próprio do cliente | — | — | — | — | não implementada | Depende da Fase D (benefício pago) |
-| Fila (drain em produção) | `JOB_DRAIN_TOKEN` | Cron (ex.: Vercel Cron) chamando `POST /api/jobs/drain` com `Authorization: Bearer <token>` a cada minuto | — | Drain in-process testado em dev | implementada, aguardando configuração | Sem ambiente de produção |
-| Sentry | `SENTRY_DSN` | Criar projeto Sentry | — | — | não implementada (SDK não instalado; logs estruturados no servidor) | Decisão de ativação |
-| Rate limit distribuído | — | Redis/Upstash quando houver mais de uma instância | — | Limiter in-memory testado | não implementada (in-memory suficiente para single-node) | Multi-instância ainda não existe |
-| Transcrição de áudio | — | Provedor a escolher | — | — | não implementada | Recurso de áudio do briefing (Fase C) |
+| Banco (Supabase Postgres) | `DATABASE_URL` | Criar projeto Supabase; usar a connection string do pooler | — | Migrations aplicadas em PGlite (mesmo dialeto) e schema exercitado por 78 testes | implementada, aguardando configuração | Sem projeto Supabase |
+| Supabase Auth | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Habilitar e-mail/senha; redirect `<APP_URL>/auth/callback`; templates pt-BR; **MFA para admin** | Callback OAuth (ao ativar Google) | Adapter compila e mapeia erros; sem projeto para teste real | implementada, aguardando configuração | Sem projeto Supabase |
+| Supabase Storage | `SUPABASE_SERVICE_ROLE_KEY` | Criar bucket **privado** `decola-assets` | — | Adapter local testado E2E (upload, validação, servir com autorização) | implementada, aguardando configuração | Sem projeto Supabase |
+| Geração por IA (Anthropic) | `ANTHROPIC_API_KEY`, `GENERATION_MODEL` | Chave em console.anthropic.com | — | Saída validada pelo mesmo Zod do renderer; reparo único; sem chamada real | implementada, aguardando configuração | Sem chave |
+| Edição por IA | idem acima | idem | — | Proteção de campos comerciais coberta por código; reserva/commit de crédito testados | implementada, aguardando configuração | Sem chave |
+| E-mail (Resend) | `RESEND_API_KEY`, `EMAIL_FROM` | Verificar domínio remetente | Bounce/complaint (a implementar) | Transporte de dev testado E2E (lead, convite, candidatura) | implementada, aguardando configuração | Sem domínio verificado |
+| Stripe (cartão/assinatura) | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Conta Stripe; webhook para `/api/webhooks/stripe` | `POST /api/webhooks/stripe` | 8 testes de evento normalizado (replay, fora de ordem, reembolso); **sem transação sandbox** | implementada, aguardando configuração | Sem conta |
+| Mercado Pago (Pix) | `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET` | Credenciais de produção; webhook para `/api/webhooks/mercadopago` | `POST /api/webhooks/mercadopago` | Assinatura HMAC implementada conforme manifesto do MP; **sem transação sandbox** | implementada, aguardando configuração | Sem conta |
+| Publicação em subdomínio | `PUBLISH_ROOT_DOMAIN`, `APP_URL` | Domínio + **wildcard DNS** `*.dominio` + certificado wildcard | — | Roteamento testado E2E em `*.localhost` | implementada, aguardando configuração | Domínio de produção não registrado |
+| Domínio próprio do cliente | idem acima | Adicionar cada domínio ao projeto na plataforma de deploy (emite SSL) | — | Normalização coberta por 7 testes; verificação DNS real por TXT; para em `ssl_pending` sem plataforma | implementada, aguardando configuração | Sem plataforma de deploy configurada |
+| Fila (drain em produção) | `JOB_DRAIN_TOKEN` | Cron chamando `POST /api/jobs/drain` com `Authorization: Bearer <token>` | — | Drain testado E2E (geração, criativos, e-mails) | implementada, aguardando configuração | Sem ambiente de produção |
+| Meta Pixel | — (ID por workspace na UI) | Nenhuma no servidor | — | Validação de formato + carregamento só após consentimento | **implementada e funcional** | — |
+| Google Analytics 4 | — (ID por workspace na UI) | Nenhuma no servidor | — | idem | **implementada e funcional** | — |
+| RD Station | — | OAuth do provedor | — | — | não implementada | Exige OAuth; declarado na UI com o motivo |
+| API Business | — (chaves criadas na UI) | Nenhuma | — | 3 endpoints verificados por curl com chave real; idempotência e isolamento | **implementada e funcional** (exige plano Business) | — |
+| Marketplace: repasse/escrow | — | Provedor com split e onboarding de recebedores | — | — | não implementada | Sem provedor; declarado na UI |
+| Sentry | `SENTRY_DSN` | Criar projeto | — | — | não implementada (SDK não instalado) | Decisão de ativação |
+| Rate limit distribuído | — | Redis/Upstash | — | Limiter in-memory testado | não implementada | Só necessário com mais de uma instância |
+| Transcrição de áudio | — | Provedor a escolher | — | — | não implementada | Recurso de áudio do briefing |
 
 ## Passo a passo mínimo para produção
 
-1. Criar projeto Supabase → preencher `DATABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
-2. Gerar `SESSION_SECRET` (`openssl rand -hex 32`) e `JOB_DRAIN_TOKEN`.
-3. Aplicar migrations: `DATABASE_URL=... npx drizzle-kit migrate` (ou deixar o primeiro boot fora de produção aplicar).
-4. Configurar domínio + wildcard na plataforma de deploy; definir `APP_URL` e `PUBLISH_ROOT_DOMAIN`.
-5. Configurar cron do drain de jobs.
-6. Opcional: `ANTHROPIC_API_KEY` (geração por IA), `RESEND_API_KEY`+`EMAIL_FROM` (e-mails reais).
+1. **Supabase**: criar projeto → `DATABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`; criar bucket privado `decola-assets`; habilitar MFA para contas admin.
+2. **Segredos**: `SESSION_SECRET` e `JOB_DRAIN_TOKEN` (`openssl rand -hex 32`).
+3. **Migrations**: `DATABASE_URL=... npx drizzle-kit migrate`.
+4. **Domínio**: registrar; configurar wildcard `*.dominio` e certificado; definir `APP_URL` e `PUBLISH_ROOT_DOMAIN`.
+5. **Cron**: agendar `POST /api/jobs/drain` a cada minuto com o token.
+6. **Opcional por capability**: `ANTHROPIC_API_KEY` (IA), `RESEND_API_KEY` + `EMAIL_FROM` (e-mails reais), Stripe e Mercado Pago (vendas).
 
-Sem os itens 1–2 o boot de produção falha de propósito (validação em `src/config/env.ts`) — nunca há fallback silencioso para modo dev.
+Sem os itens 1–2, o boot de produção **falha de propósito** (`src/config/env.ts`) — nunca há fallback silencioso para modo de desenvolvimento.
+
+## Antes de vender de verdade
+
+- [ ] Uma transação sandbox completa em Stripe e em Mercado Pago (nenhuma foi executada).
+- [ ] Definir os valores pendentes do catálogo comercial (`docs/next-actions.md`).
+- [ ] Revisão jurídica de termos, privacidade e cookies — as três estão marcadas como minuta.
+- [ ] Rodar os invariantes de crédito/cupom contra Postgres real com conexões paralelas.

@@ -41,7 +41,7 @@ Estados (spec §0): `verificado` (testado de ponta a ponta localmente), `impleme
 | Deploy por versão imutável, swap atômico (§11.1) | `publication_deployments` | verificado |
 | Host-based routing `{slug}.<root>` (D-007) | `src/proxy.ts` + `/sites/[slug]` | verificado (dev); produção exige wildcard: bloqueado_por_configuracao |
 | Free: 1 página com marca Decola (§1.2) | `entitlements.ts` + badge | verificado |
-| Domínio próprio com DNS/SSL (§11.2) | — | nao_implementado |
+| Domínio próprio com DNS/SSL (§11.2) | `features/domains/` — verificação real por TXT, estados da spec, host único global | verificado (normalização e recusa de sequestro: 7 testes; roteamento E2E); emissão SSL: bloqueado_por_configuracao |
 | Leads: validação, antispam, dedup, notificação (§11.3) | `/api/public/leads` + fila | verificado |
 | WhatsApp: clique ≠ conversa confirmada (§11.3) | rótulo explícito nas métricas | verificado |
 | Analytics first-party sem cookies (§13.1) | `/api/public/events` | verificado |
@@ -58,7 +58,7 @@ Estados (spec §0): `verificado` (testado de ponta a ponta localmente), `impleme
 | Adapters Stripe (cartão/assinatura) e MP (Pix) (§2.2) | capabilities honestas (sem parcelamento/recorrência Pix) | bloqueado_por_configuracao |
 | Créditos: reserva/commit/release atômicos, ledger append-only (§12.2) | `credits.ts` com advisory lock | verificado (9 testes) |
 | Direitos por grant, múltiplos planos, downgrade (§3.2) | `entitlements.ts` + `pagesAffectedByDowngrade` | verificado |
-| Cupons (§12.3) | — | nao_implementado |
+| Cupons (§12.3) | `billing/coupons.ts` — reserva transacional, advisory lock, resgate após pagamento | verificado (11 testes, incluindo concorrência do último uso) |
 
 ## Medição e operação
 
@@ -71,15 +71,15 @@ Estados (spec §0): `verificado` (testado de ponta a ponta localmente), `impleme
 | Marketplace: candidatura → catálogo (§15) | perfis só após aprovação | verificado; "contratar e pagar": bloqueado_por_configuracao (sem provedor de split) |
 | Privacidade: exportação e exclusão (§16) | impacto exibido antes; retenção legal preservada | verificado |
 | Admin: fila, pagamentos, privacidade, auditoria (§16) | somente leitura por decisão | verificado |
-| API Business (§15) | — | nao_implementado |
+| API Business (§15) | `api-keys/` + `/api/v1/*` — chave por hash, escopos, rate limit, OpenAPI | verificado por curl (auth, idempotência, isolamento); exige plano Business |
 | White-label completo (§15) | marca removida nos pagos; domínio/e-mail próprios | parcial — limitação declarada em /agencias |
 
 ## Qualidade
 
 | Requisito | Status |
 |---|---|
-| Gates: lint, TS estrito, build, testes (§19.1) | verificado — 51/51 testes |
-| Invariantes de isolamento entre workspaces (§19.1 item 1) | implementado (autorização por recurso); **sem teste automatizado dedicado** |
+| Gates: lint, TS estrito, build, testes (§19.1) | verificado — **78/78 testes** em 9 arquivos |
+| Invariantes de isolamento entre workspaces (§19.1 item 1) | verificado — 9 testes dedicados (conteúdo, leads cruzados, slug único, créditos, pedidos, convites) |
 | Acessibilidade WCAG AA (§19.3) | verificado — 0 problemas em 10 rotas; 3 falhas corrigidas |
 | Contraste AA (§19.3) | verificado — 1 falha real corrigida (`mist-700`) |
 | QA visual 360/390/768/desktop (§19.3) | verificado |
