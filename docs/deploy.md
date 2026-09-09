@@ -4,6 +4,10 @@ Guia operacional. O que está aqui foi verificado no código; o que depende de
 conta externa está marcado como **você faz** — não invento credencial, domínio,
 projeto Supabase nem resultado de teste que não rodou.
 
+**Estado em 2026-09-09:** código no GitHub em
+[boreljoao/decola](https://github.com/boreljoao/decola) (privado). Projeto
+Supabase: não criado. Projeto na Vercel: não criado. Domínio: não registrado.
+
 ---
 
 ## 1. O que vai (e o que não vai) para o Git
@@ -42,19 +46,28 @@ pasta `.data/` por fora do Git (pen drive, zip, drive) — ela é auto-contida.
 
 ### Aplicar as migrations
 
-Com a connection string em mãos, na raiz do projeto:
+Crie um arquivo `.env.local` na raiz do projeto com a connection string:
 
-```bash
-DATABASE_URL="postgres://...:6543/postgres" npm run db:migrate
+```
+DATABASE_URL=postgres://usuario:senha@host:6543/postgres
 ```
 
-No PowerShell:
+O `.gitignore` já exclui `.env.local`. Colocar a senha no arquivo em vez de
+passá-la na linha de comando evita que ela fique no histórico do shell.
+
+Depois:
 
 ```bash
-$env:DATABASE_URL="postgres://...:6543/postgres"; npm run db:migrate
+npm run db:migrate
 ```
 
-Isso aplica as 11 migrations. É idempotente — rodar de novo não duplica nada.
+Isso aplica as 11 migrations e cria as ~40 tabelas. É idempotente — rodar de
+novo não duplica nada. Sem `DATABASE_URL` o comando para com uma mensagem
+dizendo exatamente o que falta.
+
+O mesmo `.env.local` faz o `npm run dev` local apontar para o Supabase em vez do
+PGlite embarcado — útil para conferir o banco de produção, arriscado para
+experimentar. Apague o arquivo para voltar ao banco local.
 
 ---
 
@@ -102,7 +115,27 @@ por quê, em vez de fingir que funciona.
 
 ---
 
-## 5. Fila em produção
+## 5. Criar o projeto na Vercel — **você faz**
+
+A criação de projeto não é possível pela integração automatizada (a API
+responde `403 forbidden` para essa ação no escopo disponível). Pelo painel:
+
+1. [vercel.com/new](https://vercel.com/new) → **Import Git Repository** →
+   `boreljoao/decola`.
+2. Framework: **Next.js** (detectado sozinho). Não mexa em build command nem em
+   output directory — o `vercel.json` do repositório já traz o que é preciso.
+3. Antes de clicar em **Deploy**, abra *Environment Variables* e cole as do
+   passo 4. As cinco obrigatórias precisam estar lá **antes** do primeiro
+   deploy; senão o build sobe mas toda página responde erro no boot.
+4. Deploy.
+
+O *build* passa mesmo sem as variáveis — `src/config/env.ts` tem uma exceção
+para `NEXT_PHASE === "phase-production-build"`, para que o build não exija
+segredos. Quem falha é o *runtime*. Um deploy verde não significa app no ar.
+
+---
+
+## 6. Fila em produção
 
 Cada enfileiramento chama `after(() => kickDrain())` — o job roda depois da
 resposta, na mesma invocação serverless. Geração de página, criativos e e-mails
@@ -117,7 +150,7 @@ o limite do seu plano antes. Alternativa gratuita: um agendador externo
 
 ---
 
-## 6. Domínio e páginas publicadas
+## 7. Domínio e páginas publicadas
 
 O produto publica cada página em `{slug}.<PUBLISH_ROOT_DOMAIN>` — o roteamento
 por host está em `src/proxy.ts` e foi verificado E2E em `*.localhost`.
@@ -140,7 +173,7 @@ endereço público por subdomínio.
 
 ---
 
-## 7. Depois do primeiro deploy
+## 8. Depois do primeiro deploy
 
 - [ ] Abrir `/` e conferir que a home renderiza.
 - [ ] Criar conta e chegar em `/app` (valida Supabase Auth e sessão).
@@ -153,7 +186,7 @@ guard-rail funcionando: falta uma das cinco obrigatórias do passo 4.
 
 ---
 
-## 8. O que continua bloqueado (honestidade sobre estado)
+## 9. O que continua bloqueado (honestidade sobre estado)
 
 Nada disso é resolvido por deploy — está registrado em
 [activation-checklist.md](activation-checklist.md) e
