@@ -55,6 +55,12 @@ export default async function AppLayout({
                 Diário de Bordo
               </Link>
               <Link
+                href="/app/marketplace"
+                className="rounded-lg px-3 py-1.5 text-sm font-medium text-ink-600 hover:bg-ink-900/5 hover:text-ink-900"
+              >
+                Marketplace
+              </Link>
+              <Link
                 href="/app/cobranca"
                 className="rounded-lg px-3 py-1.5 text-sm font-medium text-ink-600 hover:bg-ink-900/5 hover:text-ink-900"
               >
