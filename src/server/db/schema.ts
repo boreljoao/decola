@@ -413,6 +413,53 @@ export const publicationDeployments = pgTable(
   (t) => [index("deployments_page_idx").on(t.pageId)],
 );
 
+// ── Domínios próprios ────────────────────────────────────────────────────────
+
+export const domainStatus = pgEnum("domain_status", [
+  "pending_verification",
+  "verified",
+  "ssl_pending",
+  "active",
+  "failed",
+  "detached",
+]);
+
+/**
+ * Domínio próprio do cliente (spec §11.2). O host é único globalmente: dois
+ * workspaces nunca disputam o mesmo endereço, e um domínio removido precisa
+ * ser reverificado antes de ser reutilizado (evita takeover).
+ */
+export const domains = pgTable(
+  "domains",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    pageId: uuid("page_id")
+      .notNull()
+      .references(() => pages.id, { onDelete: "cascade" }),
+    /** Hostname normalizado em minúsculas, sem protocolo nem barra. */
+    host: text("host").notNull(),
+    status: domainStatus("status").notNull().default("pending_verification"),
+    /** Valor que o cliente publica em um registro TXT para provar posse. */
+    verificationToken: text("verification_token").notNull(),
+    lastCheckedAt: timestamp("last_checked_at", { withTimezone: true }),
+    lastError: text("last_error"),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }),
+    activatedAt: timestamp("activated_at", { withTimezone: true }),
+    detachedAt: timestamp("detached_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    // Host único entre TODOS os workspaces enquanto estiver vinculado.
+    uniqueIndex("domains_host_unique").on(t.host),
+    index("domains_page_idx").on(t.pageId),
+  ],
+);
+
 // ── Geração ──────────────────────────────────────────────────────────────────
 
 export const generationJobs = pgTable(
