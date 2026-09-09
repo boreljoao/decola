@@ -485,6 +485,244 @@ export const creativeAssets = pgTable(
   (t) => [index("creative_assets_set_idx").on(t.setId)],
 );
 
+// ── Receita: pedidos, pagamentos e direitos ──────────────────────────────────
+
+export const orderStatus = pgEnum("order_status", [
+  "pending",
+  "awaiting_payment",
+  "paid",
+  "canceled",
+  "expired",
+  "refunded",
+]);
+
+export const paymentProviderEnum = pgEnum("payment_provider", [
+  "stripe",
+  "mercadopago",
+]);
+
+export const paymentStatus = pgEnum("payment_status", [
+  "pending",
+  "paid",
+  "failed",
+  "refunded",
+  "partially_refunded",
+]);
+
+export const grantSource = pgEnum("grant_source", [
+  "subscription",
+  "one_time",
+  "manual",
+  "trial",
+]);
+
+export const orders = pgTable(
+  "orders",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    /** Snapshot imutável da oferta aceita (spec §3): preço, plano, período. */
+    offerSnapshot: jsonb("offer_snapshot").notNull(),
+    catalogVersion: text("catalog_version").notNull(),
+    amountCents: integer("amount_cents").notNull(),
+    currency: text("currency").notNull().default("BRL"),
+    status: orderStatus("status").notNull().default("pending"),
+    provider: paymentProviderEnum("provider").notNull(),
+    /** Impede duplicar pedido pela mesma intenção de compra (spec §12.1). */
+    idempotencyKey: text("idempotency_key").notNull(),
+    providerCheckoutId: text("provider_checkout_id"),
+    createdBy: uuid("created_by").references(() => profiles.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("orders_idempotency_unique").on(t.idempotencyKey),
+    index("orders_workspace_idx").on(t.workspaceId),
+  ],
+);
+
+export const payments = pgTable(
+  "payments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    provider: paymentProviderEnum("provider").notNull(),
+    providerPaymentId: text("provider_payment_id").notNull(),
+    status: paymentStatus("status").notNull().default("pending"),
+    amountCents: integer("amount_cents").notNull(),
+    refundedCents: integer("refunded_cents").notNull().default(0),
+    method: text("method"),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("payments_provider_unique").on(t.provider, t.providerPaymentId),
+    index("payments_order_idx").on(t.orderId),
+  ],
+);
+
+/**
+ * Inbox de webhooks: `(provider, event_id)` único impede conceder duas vezes
+ * pelo mesmo evento, mesmo com reentrega (spec §12.1).
+ */
+export const webhookInbox = pgTable(
+  "webhook_inbox",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    provider: paymentProviderEnum("provider").notNull(),
+    eventId: text("event_id").notNull(),
+    eventType: text("event_type").notNull(),
+    payload: jsonb("payload").notNull(),
+    processedAt: timestamp("processed_at", { withTimezone: true }),
+    error: text("error"),
+    receivedAt: timestamp("received_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [uniqueIndex("webhook_inbox_unique").on(t.provider, t.eventId)],
+);
+
+/** Concessão de direitos por período. Vitalício é grant separado da assinatura. */
+export const entitlementGrants = pgTable(
+  "entitlement_grants",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    planId: text("plan_id").notNull(),
+    source: grantSource("source").notNull(),
+    orderId: uuid("order_id").references(() => orders.id, {
+      onDelete: "set null",
+    }),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    /** null = sem prazo (licença vitalícia). */
+    endsAt: timestamp("ends_at", { withTimezone: true }),
+    /** Revogação por reembolso/chargeback — histórico é preservado. */
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    revokedReason: text("revoked_reason"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("grants_workspace_idx").on(t.workspaceId),
+    // Um grant por pedido: reentrega de webhook não concede de novo.
+    uniqueIndex("grants_order_unique").on(t.orderId),
+  ],
+);
+
+// ── Créditos (Combustível) ───────────────────────────────────────────────────
+
+export const creditLotSource = pgEnum("credit_lot_source", [
+  "trial",
+  "subscription",
+  "purchase",
+  "bonus",
+]);
+
+export const creditEntryKind = pgEnum("credit_entry_kind", [
+  "grant",
+  "reserve",
+  "commit",
+  "release",
+  "expire",
+  "adjust",
+]);
+
+export const creditLots = pgTable(
+  "credit_lots",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    source: creditLotSource("source").notNull(),
+    amount: integer("amount").notNull(),
+    consumed: integer("consumed").notNull().default(0),
+    /** null = não expira (compra avulsa, por padrão desta versão). */
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    orderId: uuid("order_id").references(() => orders.id, {
+      onDelete: "set null",
+    }),
+    /** Recarga mensal única por período: (workspace, source, periodKey). */
+    periodKey: text("period_key"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("credit_lots_workspace_idx").on(t.workspaceId),
+    uniqueIndex("credit_lots_period_unique").on(
+      t.workspaceId,
+      t.source,
+      t.periodKey,
+    ),
+  ],
+);
+
+/** Ledger append-only: correções entram como novas linhas, nunca edição. */
+export const creditLedger = pgTable(
+  "credit_ledger",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    kind: creditEntryKind("kind").notNull(),
+    /** Positivo concede, negativo consome. */
+    amount: integer("amount").notNull(),
+    lotId: uuid("lot_id").references(() => creditLots.id, {
+      onDelete: "set null",
+    }),
+    /** Operação de negócio (ex.: `ai_edit:<versionId>`) — dedup de consumo. */
+    operationKey: text("operation_key"),
+    reason: text("reason"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("credit_ledger_workspace_idx").on(t.workspaceId),
+    uniqueIndex("credit_ledger_operation_unique").on(t.kind, t.operationKey),
+  ],
+);
+
+/** Reservas ativas: garantem saldo antes do job pago e expiram sozinhas. */
+export const creditReservations = pgTable(
+  "credit_reservations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    amount: integer("amount").notNull(),
+    operationKey: text("operation_key").notNull(),
+    status: text("status").notNull().default("held"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("credit_reservations_operation_unique").on(t.operationKey),
+    index("credit_reservations_workspace_idx").on(t.workspaceId),
+  ],
+);
+
 // ── Fila durável ─────────────────────────────────────────────────────────────
 
 export const jobs = pgTable(

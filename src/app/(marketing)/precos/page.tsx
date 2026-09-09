@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Reveal } from "@/components/marketing/reveal";
 import { formatBRL, PLANS, type PlanDef } from "@/config/commercial-policy";
+import { CheckoutButtons } from "@/features/billing/checkout-buttons";
+import {
+  paymentAvailability,
+  type ProviderAvailability,
+} from "@/features/billing/provider-registry";
 
 export const metadata: Metadata = {
   title: "Preços",
@@ -15,7 +20,15 @@ export const metadata: Metadata = {
  * que finge funcionar.
  */
 
-function PlanCard({ plan, delay }: { plan: PlanDef; delay: number }) {
+function PlanCard({
+  plan,
+  delay,
+  providers,
+}: {
+  plan: PlanDef;
+  delay: number;
+  providers: ProviderAvailability[];
+}) {
   const e = plan.entitlements;
   const monthly = plan.monthlyPriceCents.value;
   const rows: string[] = [
@@ -85,15 +98,14 @@ function PlanCard({ plan, delay }: { plan: PlanDef; delay: number }) {
               Decolar grátis
             </Link>
           ) : (
-            <div>
-              <span className="block cursor-not-allowed rounded-xl border border-white/15 py-3 text-center text-sm font-semibold text-mist-500">
-                Contratação em breve
-              </span>
-              <p className="mt-2 text-center text-xs text-mist-700">
-                {plan.sellableBlockedReason ??
-                  "O checkout com pagamento seguro está em ativação. Comece no Free — seu trabalho é preservado no upgrade."}
-              </p>
-            </div>
+            <CheckoutButtons
+              planId={plan.id as "start" | "pro" | "business"}
+              period="monthly"
+              providers={providers}
+              blockedReason={
+                plan.sellable ? undefined : plan.sellableBlockedReason
+              }
+            />
           )}
         </div>
       </div>
@@ -102,6 +114,7 @@ function PlanCard({ plan, delay }: { plan: PlanDef; delay: number }) {
 }
 
 export default function PrecosPage() {
+  const providers = paymentAvailability();
   const ordered = [PLANS.free, PLANS.start, PLANS.pro, PLANS.business];
   return (
     <main className="mx-auto w-full max-w-[1240px] px-5 py-16 sm:px-8">
@@ -120,7 +133,12 @@ export default function PrecosPage() {
 
       <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {ordered.map((plan, i) => (
-          <PlanCard key={plan.id} plan={plan} delay={i * 0.06} />
+          <PlanCard
+            key={plan.id}
+            plan={plan}
+            delay={i * 0.06}
+            providers={providers}
+          />
         ))}
       </div>
 
