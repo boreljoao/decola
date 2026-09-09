@@ -3,7 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { Badge, Button, Field, Input, Select, Textarea, cx } from "@/components/ui";
+import { ImageUploadField } from "@/features/assets/image-upload";
 import type {
+  ImageRef,
   PageDocument,
   PageSection,
   SectionType,
@@ -51,6 +53,7 @@ type PanelTab = "secoes" | "estilo" | "ia";
 
 export function ManualEditor({
   pageId,
+  projectId,
   baseVersionId,
   baseVersionNumber,
   initialDocument,
@@ -58,6 +61,7 @@ export function ManualEditor({
   versions,
 }: {
   pageId: string;
+  projectId: string;
   baseVersionId: string;
   baseVersionNumber: number;
   initialDocument: PageDocument;
@@ -234,13 +238,16 @@ export function ManualEditor({
           {tab === "secoes" && (
             <SectionsPanel
               doc={doc}
+              projectId={projectId}
               selectedIdx={selectedIdx}
               onSelect={setSelectedIdx}
               apply={apply}
               selected={selected}
             />
           )}
-          {tab === "estilo" && <StylePanel doc={doc} apply={apply} />}
+          {tab === "estilo" && (
+            <StylePanel doc={doc} projectId={projectId} apply={apply} />
+          )}
           {tab === "ia" && (
             <AiPanel
               pageId={pageId}
@@ -279,12 +286,14 @@ export function ManualEditor({
 
 function SectionsPanel({
   doc,
+  projectId,
   selectedIdx,
   onSelect,
   apply,
   selected,
 }: {
   doc: PageDocument;
+  projectId: string;
   selectedIdx: number;
   onSelect: (i: number) => void;
   apply: (u: (d: PageDocument) => PageDocument) => void;
@@ -382,6 +391,7 @@ function SectionsPanel({
         <SectionForm
           key={selected.id}
           section={selected}
+          projectId={projectId}
           onChange={(updated) =>
             apply((d) => {
               d.sections = d.sections.map((s, i) =>
@@ -398,9 +408,11 @@ function SectionsPanel({
 
 function SectionForm({
   section,
+  projectId,
   onChange,
 }: {
   section: PageSection;
+  projectId: string;
   onChange: (s: PageSection) => void;
 }) {
   const config = SECTION_FIELDS[section.type];
@@ -434,6 +446,17 @@ function SectionForm({
           </Select>
         )}
       </div>
+
+      {config.images?.map((field) => (
+        <ImageUploadField
+          key={field.key}
+          projectId={projectId}
+          value={props[field.key] as ImageRef | undefined}
+          onChange={(image) => setProp(field.key, image)}
+          label={field.label}
+          hint={field.hint}
+        />
+      ))}
 
       {config.simple.map((field) => (
         <Field key={field.key} label={field.label}>
@@ -544,14 +567,30 @@ function SectionForm({
 
 function StylePanel({
   doc,
+  projectId,
   apply,
 }: {
   doc: PageDocument;
+  projectId: string;
   apply: (u: (d: PageDocument) => PageDocument) => void;
 }) {
   const t = doc.designTokens;
   return (
     <div className="grid gap-4 rounded-2xl border border-ink-900/10 bg-card p-5">
+      <ImageUploadField
+        projectId={projectId}
+        kind="logo"
+        value={doc.logo}
+        onChange={(image) =>
+          apply((d) => {
+            d.logo = image;
+            return d;
+          })
+        }
+        label="Logo do negócio"
+        hint="Aparece no topo da página. Sem logo, mostramos o nome em tipografia."
+        previewClassName="max-h-24 w-auto"
+      />
       <Field label="Paleta base" hint="Combinações validadas de contraste, por segmento.">
         <div className="grid grid-cols-2 gap-2">
           {(Object.keys(NICHE_PALETTES) as NicheKey[]).map((key) => {

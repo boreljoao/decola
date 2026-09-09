@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Button, Card, Input, Textarea, cx } from "@/components/ui";
+import { ImageUploadField } from "@/features/assets/image-upload";
+import type { ImageRef } from "@/features/generation/page-document";
 import {
   finishBriefingAndGenerate,
   saveBriefingAnswers,
@@ -159,6 +161,7 @@ export function BriefingWizard({
             <QuestionInput
               key={question.id}
               question={question}
+              projectId={projectId}
               value={answers[question.id]?.value}
               onChange={(v) => setValue(question.id, v)}
               onEnter={next}
@@ -275,6 +278,10 @@ function SaveIndicator({
 
 function formatAnswer(q: QuestionDef, value: unknown): string {
   if (value == null || value === "") return "";
+  if (q.type === "image") {
+    const image = value as ImageRef;
+    return `imagem enviada (${image.width}×${image.height})`;
+  }
   if (q.type === "select" && q.options) {
     return q.options.find((o) => o.value === value)?.label ?? String(value);
   }
@@ -289,16 +296,33 @@ function formatAnswer(q: QuestionDef, value: unknown): string {
 
 function QuestionInput({
   question,
+  projectId,
   value,
   onChange,
   onEnter,
 }: {
   question: QuestionDef;
+  projectId: string;
   value: unknown;
   onChange: (v: unknown) => void;
   onEnter: () => void;
 }) {
   switch (question.type) {
+    case "image":
+      return (
+        <ImageUploadField
+          projectId={projectId}
+          kind={question.id === "identidade.logo" ? "logo" : "image"}
+          value={value as ImageRef | undefined}
+          onChange={(image) => onChange(image)}
+          label={question.id === "identidade.logo" ? "Logo" : "Imagem"}
+          previewClassName={
+            question.id === "identidade.logo"
+              ? "max-h-24 w-auto"
+              : "max-h-52 w-full"
+          }
+        />
+      );
     case "textarea":
       return (
         <Textarea

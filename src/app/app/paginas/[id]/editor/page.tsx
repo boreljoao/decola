@@ -64,6 +64,7 @@ export default async function EditorPage(
   return (
     <ManualEditor
       pageId={page.id}
+      projectId={id}
       baseVersionId={version.id}
       baseVersionNumber={version.version}
       initialDocument={validation.document}

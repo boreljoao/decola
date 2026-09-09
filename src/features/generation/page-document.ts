@@ -37,6 +37,23 @@ export const paletteSchema = z.object({
   accentContrast: z.string().regex(/^#[0-9a-fA-F]{6}$/),
 });
 
+/**
+ * Referência a um asset do próprio workspace. Guardamos apenas o id: a URL é
+ * derivada pelo renderer (`/api/assets/<id>`), então nem o LLM nem o editor
+ * conseguem injetar uma URL externa arbitrária.
+ */
+export const imageRefSchema = z.object({
+  assetId: z.string().uuid(),
+  alt: z.string().max(200),
+  width: z.number().int().positive().max(6000),
+  height: z.number().int().positive().max(6000),
+  /** Ponto focal 0–1 para enquadramento em recortes (object-position). */
+  focalX: z.number().min(0).max(1).optional(),
+  focalY: z.number().min(0).max(1).optional(),
+});
+
+export type ImageRef = z.infer<typeof imageRefSchema>;
+
 export const designTokensSchema = z.object({
   palette: paletteSchema,
   scheme: z.enum(["dark", "light"]),
@@ -68,6 +85,7 @@ const heroSection = z.object({
     ctaLabel: shortText,
     secondaryNote: shortText.optional(),
     highlights: z.array(shortText).max(4).optional(),
+    image: imageRefSchema.optional(),
   }),
 });
 
@@ -151,6 +169,7 @@ const authoritySection = z.object({
     title: shortText,
     text: longText,
     credentials: z.array(shortText).max(6).optional(),
+    image: imageRefSchema.optional(),
   }),
 });
 
@@ -250,6 +269,8 @@ export const pageDocumentSchema = z.object({
   schemaVersion: z.literal(PAGE_DOCUMENT_SCHEMA_VERSION),
   locale: z.literal("pt-BR"),
   businessName: shortText,
+  /** Logo enviada pelo usuário; ausente ⇒ tratamento tipográfico do nome. */
+  logo: imageRefSchema.optional(),
   strategy: z.object({
     niche: z.enum([
       "estetica_beleza",

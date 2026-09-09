@@ -3,6 +3,7 @@ import type { BriefingAnswers } from "@/features/briefing/questions";
 import { answerValue } from "@/features/briefing/questions";
 import {
   PAGE_DOCUMENT_SCHEMA_VERSION,
+  type ImageRef,
   type PageDocument,
   type PageSection,
 } from "./page-document";
@@ -254,6 +255,8 @@ export function generatePageDocument(input: RulesEngineInput): PageDocument {
   const faqRaw = answerValue<string>(answers, "conteudo.faq");
   const endereco = answerValue<string>(answers, "conteudo.endereco");
   const horarios = answerValue<string>(answers, "conteudo.horarios");
+  const logo = answerValue<ImageRef>(answers, "identidade.logo");
+  const heroImage = answerValue<ImageRef>(answers, "visual.imagem_hero");
   const whatsapp = answerValue<string>(answers, "conversao.whatsapp");
   const linkDestino = answerValue<string>(answers, "conversao.link_destino");
   const formCampos = answerValue<string[]>(answers, "conversao.form_campos");
@@ -338,8 +341,11 @@ export function generatePageDocument(input: RulesEngineInput): PageDocument {
   const headline = seededPick(seed, "headline", heroHeadlines);
 
   // Prioridade do hero informada substitui a escolha semeada.
-  const heroVariant =
-    prioridadeHero === "mensagem"
+  // Com imagem no topo, o split coloca foto e mensagem lado a lado; sem ela,
+  // a prioridade declarada no briefing decide, e só então a escolha semeada.
+  const heroVariant = heroImage
+    ? ("split" as const)
+    : prioridadeHero === "mensagem"
       ? ("centered" as const)
       : prioridadeHero === "oferta"
         ? ("split" as const)
@@ -368,6 +374,14 @@ export function generatePageDocument(input: RulesEngineInput): PageDocument {
         diferencial.length > 0
           ? [truncateAtWord(stripFinalDot(sentenceCase(diferencial)), 200)]
           : undefined,
+      image: heroImage
+        ? {
+            ...heroImage,
+            alt:
+              heroImage.alt ||
+              `Imagem de destaque de ${nome}`.slice(0, 200),
+          }
+        : undefined,
     },
   });
 
@@ -574,6 +588,9 @@ export function generatePageDocument(input: RulesEngineInput): PageDocument {
     schemaVersion: PAGE_DOCUMENT_SCHEMA_VERSION,
     locale: "pt-BR",
     businessName: nome,
+    logo: logo
+      ? { ...logo, alt: logo.alt || `Logo de ${nome}`.slice(0, 200) }
+      : undefined,
     strategy: {
       niche,
       objective: objetivo,

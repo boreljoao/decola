@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import type {
+  ImageRef,
   PageDocument,
   PageSection,
 } from "@/features/generation/page-document";
@@ -33,6 +34,45 @@ const FONT_VAR: Record<string, string> = {
   "space-grotesk": "var(--font-space-grotesk)",
   inter: "var(--font-inter)",
 };
+
+/**
+ * Imagem de asset do workspace. A URL é derivada do id — o documento nunca
+ * carrega URL externa, então não há como injetar origem arbitrária.
+ * `alt` vazio marca imagem decorativa para leitores de tela.
+ */
+function AssetImage({
+  image,
+  className,
+  sizes,
+  priority,
+}: {
+  image: ImageRef;
+  className?: string;
+  sizes?: string;
+  priority?: boolean;
+}) {
+  const focal =
+    image.focalX != null || image.focalY != null
+      ? `${(image.focalX ?? 0.5) * 100}% ${(image.focalY ?? 0.5) * 100}%`
+      : undefined;
+  return (
+    // Assets são servidos pela rota autorizada `/api/assets/[id]`, que já
+    // aplica cache imutável depois da publicação; o otimizador do Next não
+    // deve reprocessá-los (perderia a checagem de autorização).
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`/api/assets/${image.assetId}`}
+      alt={image.alt}
+      width={image.width}
+      height={image.height}
+      sizes={sizes}
+      loading={priority ? "eager" : "lazy"}
+      decoding="async"
+      className={className}
+      style={focal ? { objectPosition: focal } : undefined}
+    />
+  );
+}
 
 function Icon({ name }: { name: string }) {
   const paths: Record<string, ReactNode> = {
@@ -144,10 +184,18 @@ function SectionRenderer({ section, ctx, pad }: { section: PageSection; ctx: Ren
             } ${section.variant === "split" ? "grid items-center gap-10 lg:grid-cols-[7fr_5fr]" : ""}`}
           >
             <div className={centered ? "mx-auto max-w-3xl" : "max-w-3xl"}>
-              {p.badge && (
-                <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-current/15 px-4 py-1.5 text-sm font-medium tracking-wide text-[var(--lp-muted)]">
-                  {p.badge}
-                </p>
+              {ctx.doc.logo ? (
+                <AssetImage
+                  image={ctx.doc.logo}
+                  priority
+                  className={`mb-6 h-14 w-auto object-contain ${centered ? "mx-auto" : ""}`}
+                />
+              ) : (
+                p.badge && (
+                  <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-current/15 px-4 py-1.5 text-sm font-medium tracking-wide text-[var(--lp-muted)]">
+                    {p.badge}
+                  </p>
+                )
               )}
               <h1
                 style={{ fontFamily: "var(--lp-font-heading)" }}
@@ -165,7 +213,15 @@ function SectionRenderer({ section, ctx, pad }: { section: PageSection; ctx: Ren
                 )}
               </div>
             </div>
-            {section.variant === "split" && p.highlights && p.highlights.length > 0 && (
+            {section.variant === "split" && p.image && (
+              <AssetImage
+                image={p.image}
+                priority
+                sizes="(max-width: 1024px) 100vw, 40vw"
+                className={`${radius} h-full max-h-[520px] w-full object-cover shadow-lg`}
+              />
+            )}
+            {section.variant === "split" && !p.image && p.highlights && p.highlights.length > 0 && (
               <ul className="grid gap-3">
                 {p.highlights.map((h) => (
                   <li
@@ -179,6 +235,14 @@ function SectionRenderer({ section, ctx, pad }: { section: PageSection; ctx: Ren
                   </li>
                 ))}
               </ul>
+            )}
+            {section.variant !== "split" && p.image && (
+              <AssetImage
+                image={p.image}
+                priority
+                sizes="100vw"
+                className={`${radius} mt-10 max-h-[460px] w-full object-cover shadow-lg`}
+              />
             )}
             {section.variant !== "split" && p.highlights && p.highlights.length > 0 && (
               <ul className={`mt-10 flex flex-wrap gap-3 ${centered ? "justify-center" : ""}`}>
@@ -313,8 +377,8 @@ function SectionRenderer({ section, ctx, pad }: { section: PageSection; ctx: Ren
 
     case "authority": {
       const p = section.props;
-      return (
-        <Shell pad={pad} tinted>
+      const body = (
+        <div>
           <Heading>{p.title}</Heading>
           <p className="mt-5 max-w-3xl text-lg leading-relaxed text-[var(--lp-muted)]">{p.text}</p>
           {p.credentials && p.credentials.length > 0 && (
@@ -328,6 +392,22 @@ function SectionRenderer({ section, ctx, pad }: { section: PageSection; ctx: Ren
                 </li>
               ))}
             </ul>
+          )}
+        </div>
+      );
+      return (
+        <Shell pad={pad} tinted>
+          {p.image ? (
+            <div className="grid items-center gap-10 md:grid-cols-[2fr_3fr]">
+              <AssetImage
+                image={p.image}
+                sizes="(max-width: 768px) 100vw, 35vw"
+                className={`${radius} max-h-[420px] w-full object-cover`}
+              />
+              {body}
+            </div>
+          ) : (
+            body
           )}
         </Shell>
       );

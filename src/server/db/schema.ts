@@ -388,6 +388,44 @@ export const generationSteps = pgTable(
   (t) => [uniqueIndex("generation_steps_unique").on(t.generationJobId, t.step)],
 );
 
+// ── Assets (uploads do usuário) ──────────────────────────────────────────────
+
+export const assetKind = pgEnum("asset_kind", ["logo", "image"]);
+
+export const assets = pgTable(
+  "assets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    /** Projeto dono do asset — a biblioteca do editor é por projeto. */
+    projectId: uuid("project_id").references(() => projects.id, {
+      onDelete: "cascade",
+    }),
+    kind: assetKind("kind").notNull().default("image"),
+    /** Caminho no provider (filesystem local ou objeto no Storage). */
+    storageKey: text("storage_key").notNull(),
+    mimeType: text("mime_type").notNull(),
+    bytes: integer("bytes").notNull(),
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    originalName: text("original_name"),
+    /** Texto alternativo — acessibilidade (spec §9). */
+    alt: text("alt"),
+    uploadedBy: uuid("uploaded_by").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("assets_workspace_idx").on(t.workspaceId),
+    index("assets_project_idx").on(t.projectId),
+  ],
+);
+
 // ── Criativos ────────────────────────────────────────────────────────────────
 
 export const creativeSetStatus = pgEnum("creative_set_status", [

@@ -27,11 +27,19 @@ export interface ListFieldDef {
   newItem: Record<string, unknown>;
 }
 
+export interface ImageFieldDef {
+  key: string;
+  label: string;
+  hint?: string;
+}
+
 export interface SectionFieldConfig {
   title: string;
   variants: readonly string[];
   simple: SimpleFieldDef[];
   lists?: ListFieldDef[];
+  /** Campos de imagem (asset do próprio workspace). */
+  images?: ImageFieldDef[];
 }
 
 export const SECTION_FIELDS: Record<SectionType, SectionFieldConfig> = {
@@ -53,6 +61,13 @@ export const SECTION_FIELDS: Record<SectionType, SectionFieldConfig> = {
         min: 0,
         max: 4,
         newItem: {},
+      },
+    ],
+    images: [
+      {
+        key: "image",
+        label: "Imagem do topo",
+        hint: "Aparece ao lado da mensagem. Sem imagem, os destaques ocupam esse espaço.",
       },
     ],
   },
@@ -128,6 +143,7 @@ export const SECTION_FIELDS: Record<SectionType, SectionFieldConfig> = {
       { key: "title", label: "Título", kind: "text" },
       { key: "text", label: "Texto", kind: "textarea" },
     ],
+    images: [{ key: "image", label: "Foto", hint: "Foto de quem atende." }],
   },
   offer: {
     title: "Oferta",

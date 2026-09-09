@@ -17,7 +17,16 @@ export type QuestionType =
   | "multiselect"
   | "slider"
   | "phone"
-  | "url";
+  | "url"
+  | "image";
+
+/** Referência a asset gravada como resposta (mesma forma do PageDocument). */
+export const imageAnswerSchema = z.object({
+  assetId: z.string().uuid(),
+  alt: z.string().max(200),
+  width: z.number().int().positive().max(6000),
+  height: z.number().int().positive().max(6000),
+});
 
 export type BriefingModule =
   | "identidade"
@@ -134,6 +143,17 @@ export const QUESTIONS: QuestionDef[] = [
     type: "text",
     requiredIn: [],
     validate: optionalText(120),
+    inferable: false,
+  },
+  {
+    id: "identidade.logo",
+    module: "identidade",
+    label: "Envie a logo do seu negócio (opcional)",
+    help: "Sem logo, criamos um tratamento tipográfico com o nome — não registramos nem criamos marca para você.",
+    type: "image",
+    requiredIn: [],
+    quickFlow: true,
+    validate: imageAnswerSchema.optional(),
     inferable: false,
   },
   {
@@ -432,6 +452,16 @@ export const QUESTIONS: QuestionDef[] = [
     requiredIn: ["rapido", "completo"],
     quickFlow: true,
     validate: z.enum(["claro", "escuro", "ia_decide"]),
+    inferable: false,
+  },
+  {
+    id: "visual.imagem_hero",
+    module: "visual",
+    label: "Tem uma foto para o topo da página? (opcional)",
+    help: "Uma foto real do seu trabalho, espaço ou produto. Sem imagem, o topo usa composição tipográfica.",
+    type: "image",
+    requiredIn: [],
+    validate: imageAnswerSchema.optional(),
     inferable: false,
   },
   {
