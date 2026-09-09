@@ -57,6 +57,13 @@
       "when": 1788952088644,
       "tag": "0007_material_justice",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788952407899,
+      "tag": "0008_bumpy_santa_claus",
+      "breakpoints": true
     }
   ]
 }

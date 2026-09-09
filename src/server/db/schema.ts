@@ -751,6 +751,88 @@ export const entitlementGrants = pgTable(
   ],
 );
 
+// ── Cupons ───────────────────────────────────────────────────────────────────
+
+export const couponKind = pgEnum("coupon_kind", ["percent", "fixed"]);
+
+export const coupons = pgTable(
+  "coupons",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** Código normalizado em maiúsculas, sem espaços. */
+    code: text("code").notNull().unique(),
+    kind: couponKind("kind").notNull(),
+    /** percent: 1–100; fixed: centavos. */
+    value: integer("value").notNull(),
+    /** Planos elegíveis; vazio = todos os vendáveis. */
+    planIds: jsonb("plan_ids").notNull().default([]),
+    /** Limite global de usos; null = ilimitado. */
+    maxRedemptions: integer("max_redemptions"),
+    /** Uma utilização por workspace, quando true. */
+    oncePerWorkspace: boolean("once_per_workspace").notNull().default(true),
+    /** Apenas na primeira compra do workspace. */
+    firstPurchaseOnly: boolean("first_purchase_only").notNull().default(false),
+    startsAt: timestamp("starts_at", { withTimezone: true }),
+    endsAt: timestamp("ends_at", { withTimezone: true }),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("coupons_active_idx").on(t.active)],
+);
+
+/**
+ * Reserva transacional durante o checkout (spec §12.3): impede ultrapassar o
+ * limite por concorrência. Expira sozinha se o pagamento não vier.
+ */
+export const couponReservations = pgTable(
+  "coupon_reservations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    couponId: uuid("coupon_id")
+      .notNull()
+      .references(() => coupons.id, { onDelete: "cascade" }),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    orderId: uuid("order_id").notNull(),
+    status: text("status").notNull().default("held"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    // Uma reserva por pedido: retomar o checkout não consome duas vezes.
+    uniqueIndex("coupon_reservations_order_unique").on(t.orderId),
+    index("coupon_reservations_coupon_idx").on(t.couponId, t.status),
+  ],
+);
+
+/** Resgate confirmado após pagamento — é o que conta para o limite global. */
+export const couponRedemptions = pgTable(
+  "coupon_redemptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    couponId: uuid("coupon_id")
+      .notNull()
+      .references(() => coupons.id, { onDelete: "cascade" }),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    orderId: uuid("order_id").notNull(),
+    discountCents: integer("discount_cents").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("coupon_redemptions_order_unique").on(t.orderId),
+    index("coupon_redemptions_coupon_idx").on(t.couponId),
+  ],
+);
+
 // ── Créditos (Combustível) ───────────────────────────────────────────────────
 
 export const creditLotSource = pgEnum("credit_lot_source", [

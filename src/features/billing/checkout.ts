@@ -14,6 +14,7 @@ import { assertRole, requireWorkspace } from "@/server/auth";
 import { getDb } from "@/server/db";
 import { auditLog, orders } from "@/server/db/schema";
 import type { OfferSnapshot } from "./apply-event";
+import { releaseCoupon, reserveCoupon, validateCoupon } from "./coupons";
 import { PaymentError, type PaymentProvider } from "./payment-provider";
 import {
   getPaymentProvider,
@@ -36,7 +37,40 @@ const checkoutInput = z.object({
   planId: z.enum(["start", "pro", "business"]),
   period: z.enum(["monthly", "annual"]),
   provider: z.enum(["stripe", "mercadopago"]),
+  couponCode: z.string().trim().max(40).optional(),
 });
+
+/** Pré-visualiza o desconto sem reservar — o preço vem sempre do servidor. */
+export async function previewCouponAction(input: {
+  code: string;
+  planId: "start" | "pro" | "business";
+  period: "monthly" | "annual";
+}): Promise<
+  | { ok: true; discountCents: number; finalCents: number; label: string }
+  | { ok: false; message: string }
+> {
+  const plan = PLANS[input.planId as PlanId];
+  const price =
+    input.period === "annual" ? plan.annualPriceCents : plan.monthlyPriceCents;
+  if (price.status !== "approved" || price.value == null) {
+    return { ok: false, message: "Plano indisponível para contratação." };
+  }
+
+  const ctx = await requireWorkspace();
+  const result = await validateCoupon({
+    code: input.code,
+    workspaceId: ctx.workspaceId,
+    planId: plan.id,
+    amountCents: price.value,
+  });
+  if (!result.ok) return { ok: false, message: result.message };
+  return {
+    ok: true,
+    discountCents: result.discount.discountCents,
+    finalCents: result.discount.finalCents,
+    label: result.discount.label,
+  };
+}
 
 export interface CheckoutActionResult {
   ok: boolean;
@@ -151,12 +185,35 @@ export async function createCheckoutAction(
     return { ok: false, error: "Este plano já está ativo no seu workspace." };
   }
 
+  // Cupom: reservado ANTES de criar a cobrança, e o valor cobrado é o
+  // descontado — o desconto nunca vem do cliente.
+  let chargedCents = amountCents;
+  let couponLabel: string | undefined;
+  if (parsed.data.couponCode) {
+    const reservation = await reserveCoupon({
+      code: parsed.data.couponCode,
+      workspaceId: ctx.workspaceId,
+      orderId: order.id,
+      planId: plan.id,
+      amountCents,
+    });
+    if (!reservation.ok) {
+      return { ok: false, error: reservation.message };
+    }
+    chargedCents = reservation.discount.finalCents;
+    couponLabel = reservation.discount.label;
+    await db
+      .update(orders)
+      .set({ amountCents: chargedCents, updatedAt: new Date() })
+      .where(eq(orders.id, order.id));
+  }
+
   try {
     const appUrl = env().APP_URL;
     const checkout = await provider.createCheckout({
       orderId: order.id,
-      amountCents,
-      description: `Decola — ${snapshot.label}`,
+      amountCents: chargedCents,
+      description: `Decola — ${snapshot.label}${couponLabel ? ` · ${couponLabel}` : ""}`,
       idempotencyKey,
       successUrl: `${appUrl}/app/cobranca?pedido=${order.id}`,
       cancelUrl: `${appUrl}/precos`,
@@ -184,7 +241,8 @@ export async function createCheckoutAction(
       meta: {
         planId: plan.id,
         period,
-        amount: formatBRL(amountCents),
+        amount: formatBRL(chargedCents),
+        coupon: couponLabel,
         provider: providerId,
       },
     });
@@ -196,6 +254,8 @@ export async function createCheckoutAction(
       pix: checkout.pix,
     };
   } catch (err) {
+    // Checkout não criado: a vaga do cupom volta para o próximo cliente.
+    if (parsed.data.couponCode) await releaseCoupon(order.id);
     return {
       ok: false,
       error:

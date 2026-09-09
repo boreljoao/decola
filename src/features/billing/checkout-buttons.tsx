@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Badge, Button, cx } from "@/components/ui";
-import { createCheckoutAction } from "./checkout";
+import { createCheckoutAction, previewCouponAction } from "./checkout";
 import type { ProviderAvailability } from "./provider-registry";
 
 /**
@@ -24,6 +24,12 @@ export function CheckoutButtons({
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponState, setCouponState] = useState<
+    | { kind: "ok"; label: string; finalCents: number }
+    | { kind: "error"; message: string }
+    | null
+  >(null);
   const [pix, setPix] = useState<{
     copyPaste: string;
     qrCodeBase64?: string;
@@ -58,11 +64,32 @@ export function CheckoutButtons({
     );
   }
 
+  function checkCoupon() {
+    if (!couponCode.trim()) return;
+    startTransition(async () => {
+      const result = await previewCouponAction({
+        code: couponCode,
+        planId,
+        period,
+      });
+      setCouponState(
+        result.ok
+          ? { kind: "ok", label: result.label, finalCents: result.finalCents }
+          : { kind: "error", message: result.message },
+      );
+    });
+  }
+
   function start(provider: "stripe" | "mercadopago") {
     setError(null);
     setPix(null);
     startTransition(async () => {
-      const result = await createCheckoutAction({ planId, period, provider });
+      const result = await createCheckoutAction({
+        planId,
+        period,
+        provider,
+        couponCode: couponState?.kind === "ok" ? couponCode : undefined,
+      });
       if (!result.ok) {
         setError(result.error ?? "Falha ao iniciar o pagamento.");
         return;
@@ -77,6 +104,44 @@ export function CheckoutButtons({
 
   return (
     <div className="grid gap-2">
+      <div className="grid gap-1.5">
+        <div className="flex gap-2">
+          <input
+            value={couponCode}
+            onChange={(e) => {
+              setCouponCode(e.target.value);
+              setCouponState(null);
+            }}
+            placeholder="Cupom (opcional)"
+            aria-label="Código do cupom"
+            maxLength={40}
+            className="min-w-0 flex-1 rounded-xl border border-white/15 bg-night-850 px-3 py-2 text-sm text-mist-100 placeholder:text-mist-700"
+          />
+          <button
+            type="button"
+            onClick={checkCoupon}
+            disabled={pending || couponCode.trim().length === 0}
+            className="rounded-xl border border-white/15 px-3 py-2 text-xs font-semibold text-mist-100 disabled:opacity-40"
+          >
+            Aplicar
+          </button>
+        </div>
+        {couponState?.kind === "ok" && (
+          <p className="text-xs font-medium text-electric-300">
+            {couponState.label} aplicado — total{" "}
+            {(couponState.finalCents / 100).toLocaleString("pt-BR", {
+              style: "currency",
+              currency: "BRL",
+            })}
+          </p>
+        )}
+        {couponState?.kind === "error" && (
+          <p role="alert" className="text-xs font-medium text-red-400">
+            {couponState.message}
+          </p>
+        )}
+      </div>
+
       {providers
         .filter((p) => p.available)
         .map((p, index) => (

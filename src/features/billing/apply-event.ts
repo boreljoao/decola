@@ -8,6 +8,7 @@ import {
   payments,
   webhookInbox,
 } from "@/server/db/schema";
+import { redeemCoupon, releaseCoupon } from "./coupons";
 import { grantCredits } from "./credits";
 import type { NormalizedPaymentEvent } from "./payment-provider";
 
@@ -183,6 +184,18 @@ export async function applyPaymentEvent(
 
       return { grantedEntitlement: false, snapshot: null, plan: null };
     });
+
+    // Cupom: o resgate só conta depois do pagamento confirmado (spec §12.3).
+    // Falha ou reembolso devolvem a vaga; por padrão, reembolso NÃO restaura
+    // uma promoção de uso único já consumida.
+    if (event.status === "paid") {
+      await redeemCoupon({
+        orderId: order.id,
+        discountCents: Math.max(0, order.amountCents - (event.amountCents ?? order.amountCents)),
+      });
+    } else if (event.status === "failed") {
+      await releaseCoupon(order.id);
+    }
 
     // Créditos do período são concedidos fora da transação de direitos, com a
     // própria chave de período — recarga do mesmo ciclo nunca duplica.
