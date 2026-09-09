@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Aurora, DotGrid } from "@/components/marketing/aurora";
 import { Reveal } from "@/components/marketing/reveal";
+import { SpotlightCard } from "@/components/marketing/spotlight-card";
 
 export const metadata: Metadata = {
   title: "Como funciona",
@@ -10,81 +12,136 @@ export const metadata: Metadata = {
 
 const STEPS = [
   {
-    title: "1 · Você responde o briefing",
+    number: "1",
+    title: "Você responde o briefing",
     text: "Perguntas diretas sobre oferta, público, dor e diferencial — com exemplos do seu nicho. No modo rápido, cerca de 5 minutos. Suas respostas são salvas automaticamente: pode sair e voltar quando quiser.",
     detail:
-      "O que você não informar, a Decola não inventa: sem depoimentos fabricados, sem garantias falsas, sem preços que você não aprovou.",
+      "O que você não informar, a Decola não inventa: sem depoimento fabricado, sem garantia falsa, sem preço que você nunca aprovou.",
+    aside: [
+      "Responder falando, se preferir digitar menos",
+      "Salvamento automático a cada resposta",
+      "Modo completo com 8 módulos, quando quiser aprofundar",
+    ],
   },
   {
-    title: "2 · O motor compõe a sua página",
+    number: "2",
+    title: "O motor compõe a sua página",
     text: "Estratégia, seleção de seções, textos, cores e tipografia derivam das suas respostas. Cada etapa da geração é registrada e você acompanha o progresso real — nada de barra de carregamento de mentira.",
     detail:
       "A composição usa a biblioteca proprietária de componentes da Decola, com variações estruturais por nicho e emoção.",
+    aside: [
+      "Paleta e tipografia escolhidas pelo seu segmento",
+      "Seções que só aparecem se você tem o conteúdo",
+      "A geração continua mesmo se você fechar a aba",
+    ],
   },
   {
-    title: "3 · Você revisa e decola",
-    text: "Veja o preview em desktop e mobile, ajuste o briefing se quiser regenerar e publique no seu endereço Decola em um clique. No Free, sua página vai ao ar com a marca Decola no rodapé.",
+    number: "3",
+    title: "Você revisa e decola",
+    text: "Veja o preview em desktop e mobile, ajuste no editor e publique no seu endereço Decola em um clique. No Free, sua página vai ao ar com a marca Decola no rodapé.",
     detail:
       "Publicar cria uma versão imutável: se algo falhar, a versão anterior continua no ar.",
+    aside: [
+      "Editor de texto, cores, imagens e ordem das seções",
+      "Histórico de versões com restauração",
+      "Republicar e despublicar quando quiser",
+    ],
   },
   {
-    title: "4 · A Decola mede o que importa",
+    number: "4",
+    title: "A Decola mede o que importa",
     text: "Visitas, cliques no botão, cliques no WhatsApp e leads confirmados aparecem no seu painel — métricas distintas, sem maquiagem. Cada contato do formulário fica salvo e você é avisado por e-mail.",
     detail:
       "Medição first-party: sem cookies e sem identificadores persistentes por padrão.",
+    aside: [
+      "Clique no WhatsApp ≠ conversa confirmada",
+      "Taxa de conversão sempre com o denominador à vista",
+      "Diário de Bordo mensal com o próximo passo sugerido",
+    ],
   },
 ];
 
 export default function ComoFuncionaPage() {
   return (
-    <main className="mx-auto w-full max-w-[1240px] px-5 py-16 sm:px-8">
-      <Reveal>
-        <h1
-          style={{ fontFamily: "var(--font-sora)" }}
-          className="max-w-2xl text-balance text-4xl font-bold sm:text-5xl"
-        >
-          Da primeira pergunta à página no ar
-        </h1>
-        <p className="mt-5 max-w-2xl text-lg text-mist-300">
-          A Decola não pede que você aprenda design. Pede boas respostas — e
-          devolve uma página com a sua identidade, pronta para receber clientes.
-        </p>
-      </Reveal>
-
-      <div className="mt-14 grid gap-6">
-        {STEPS.map((step, i) => (
-          <Reveal key={step.title} delay={i * 0.05}>
-            <div className="grid gap-4 rounded-2xl border border-white/8 bg-night-850 p-8 md:grid-cols-[2fr_3fr] md:gap-10">
-              <h2
-                style={{ fontFamily: "var(--font-sora)" }}
-                className="text-2xl font-bold"
-              >
-                {step.title}
-              </h2>
-              <div>
-                <p className="leading-relaxed text-mist-300">{step.text}</p>
-                <p className="mt-3 text-sm leading-relaxed text-mist-500">
-                  {step.detail}
-                </p>
-              </div>
-            </div>
+    <main className="relative">
+      <section className="relative overflow-hidden">
+        <Aurora />
+        <DotGrid />
+        <div className="relative mx-auto w-full max-w-[1240px] px-5 py-20 sm:px-8">
+          <Reveal>
+            <h1
+              style={{ fontFamily: "var(--font-sora)" }}
+              className="max-w-2xl text-balance text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl"
+            >
+              Da primeira pergunta à página no ar
+            </h1>
+            <p className="mt-5 max-w-2xl text-lg leading-relaxed text-mist-300">
+              A Decola não pede que você aprenda design. Pede boas respostas — e
+              devolve uma página com a sua identidade, pronta para receber
+              clientes.
+            </p>
           </Reveal>
-        ))}
-      </div>
-
-      <Reveal>
-        <div className="mt-16 text-center">
-          <Link
-            href="/cadastro"
-            className="inline-block rounded-xl bg-ember-500 px-8 py-4 text-lg font-semibold text-night-950 transition-all hover:-translate-y-0.5 hover:bg-ember-400"
-          >
-            Começar meu briefing ✦
-          </Link>
-          <p className="mt-3 text-sm text-mist-500">
-            Grátis, sem cartão. Suas respostas ficam salvas.
-          </p>
         </div>
-      </Reveal>
+      </section>
+
+      <section className="mx-auto w-full max-w-[1240px] px-5 pb-24 sm:px-8">
+        <div className="grid gap-6">
+          {STEPS.map((step, i) => (
+            <Reveal key={step.number} delay={i * 0.05}>
+              <SpotlightCard className="p-8 sm:p-10">
+                <div className="grid gap-8 lg:grid-cols-[1fr_1.4fr_1fr]">
+                  <div className="flex items-start gap-4">
+                    <span
+                      style={{ fontFamily: "var(--font-sora)" }}
+                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-electric-500/25 bg-electric-500/10 text-lg font-bold text-electric-300"
+                    >
+                      {step.number}
+                    </span>
+                    <h2
+                      style={{ fontFamily: "var(--font-sora)" }}
+                      className="text-2xl font-bold leading-tight tracking-tight"
+                    >
+                      {step.title}
+                    </h2>
+                  </div>
+
+                  <div>
+                    <p className="leading-relaxed text-mist-300">{step.text}</p>
+                    <p className="mt-3 text-sm leading-relaxed text-mist-500">
+                      {step.detail}
+                    </p>
+                  </div>
+
+                  <ul className="grid content-start gap-2">
+                    {step.aside.map((item) => (
+                      <li
+                        key={item}
+                        className="rounded-lg border border-white/8 bg-night-800/60 px-3.5 py-2.5 text-sm text-mist-300"
+                      >
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </SpotlightCard>
+            </Reveal>
+          ))}
+        </div>
+
+        <Reveal>
+          <div className="mt-16 text-center">
+            <Link
+              href="/cadastro"
+              className="inline-block rounded-xl bg-ember-500 px-8 py-4 text-lg font-semibold text-night-950 shadow-[0_8px_40px_-8px_rgb(237_164_40/0.55)] transition-all hover:-translate-y-0.5 hover:bg-ember-400"
+            >
+              Começar meu briefing ✦
+            </Link>
+            <p className="mt-3 text-sm text-mist-500">
+              Grátis, sem cartão. Suas respostas ficam salvas.
+            </p>
+          </div>
+        </Reveal>
+      </section>
     </main>
   );
 }

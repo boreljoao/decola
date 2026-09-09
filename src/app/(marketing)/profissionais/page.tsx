@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Aurora } from "@/components/marketing/aurora";
 import { Reveal } from "@/components/marketing/reveal";
 import { listActiveProfessionals } from "@/features/marketplace/actions";
 import { ProfessionalApplicationForm } from "@/features/marketplace/forms";
@@ -18,11 +19,12 @@ export default async function ProfissionaisPage() {
   const professionals = await listActiveProfessionals();
 
   return (
-    <main className="mx-auto w-full max-w-[1240px] px-5 py-16 sm:px-8">
+    <main className="relative mx-auto w-full max-w-[1240px] px-5 py-16 sm:px-8">
+      <Aurora className="opacity-60" />
       <Reveal>
         <h1
           style={{ fontFamily: "var(--font-sora)" }}
-          className="max-w-2xl text-balance text-4xl font-bold sm:text-5xl"
+          className="max-w-2xl text-balance text-4xl font-bold tracking-tight sm:text-5xl"
         >
           Profissionais que cuidam da página junto com você
         </h1>
@@ -41,7 +43,7 @@ export default async function ProfissionaisPage() {
             Profissionais disponíveis
           </h2>
           {professionals.length === 0 ? (
-            <div className="mt-5 rounded-2xl border border-white/10 bg-night-850 p-7">
+            <div className="mt-5 gradient-border rounded-2xl bg-night-850 p-7">
               <p className="text-mist-300">
                 <strong className="text-mist-100">
                   Ainda não há profissionais aprovados no catálogo.
@@ -58,7 +60,7 @@ export default async function ProfissionaisPage() {
               {professionals.map((professional) => (
                 <div
                   key={professional.id}
-                  className="rounded-2xl border border-white/10 bg-night-850 p-6"
+                  className="gradient-border rounded-2xl bg-night-850 p-6"
                 >
                   <h3 className="text-lg font-semibold">
                     {professional.displayName}
@@ -78,7 +80,7 @@ export default async function ProfissionaisPage() {
 
       <Reveal delay={0.1}>
         <section className="mt-16 grid gap-10 lg:grid-cols-[3fr_2fr]">
-          <div className="rounded-2xl border border-white/10 bg-night-850 p-7 sm:p-9">
+          <div className="gradient-border rounded-2xl bg-night-850 p-7 sm:p-9">
             <h2
               style={{ fontFamily: "var(--font-sora)" }}
               className="text-2xl font-bold"

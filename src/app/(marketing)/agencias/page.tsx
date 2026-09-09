@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Aurora } from "@/components/marketing/aurora";
 import { Reveal } from "@/components/marketing/reveal";
 import { PLANS } from "@/config/commercial-policy";
 import { ContactForm } from "@/features/marketplace/forms";
@@ -13,11 +14,12 @@ export default function AgenciasPage() {
   const plan = PLANS.agencia;
 
   return (
-    <main className="mx-auto w-full max-w-[1240px] px-5 py-16 sm:px-8">
+    <main className="relative mx-auto w-full max-w-[1240px] px-5 py-16 sm:px-8">
+      <Aurora className="opacity-60" />
       <Reveal>
         <h1
           style={{ fontFamily: "var(--font-sora)" }}
-          className="max-w-2xl text-balance text-4xl font-bold sm:text-5xl"
+          className="max-w-2xl text-balance text-4xl font-bold tracking-tight sm:text-5xl"
         >
           Para quem cuida de vários negócios ao mesmo tempo
         </h1>
@@ -30,7 +32,7 @@ export default function AgenciasPage() {
       <div className="mt-12 grid gap-10 lg:grid-cols-[3fr_2fr]">
         <Reveal delay={0.05}>
           <div className="grid gap-5">
-            <div className="rounded-2xl border border-white/10 bg-night-850 p-7">
+            <div className="gradient-border rounded-2xl bg-night-850 p-7">
               <h2 className="text-lg font-semibold">O que já funciona hoje</h2>
               <ul className="mt-3 grid gap-2 text-sm text-mist-300">
                 <li>
@@ -70,7 +72,7 @@ export default function AgenciasPage() {
         </Reveal>
 
         <Reveal delay={0.1}>
-          <div className="rounded-2xl border border-white/10 bg-night-850 p-7">
+          <div className="gradient-border rounded-2xl bg-night-850 p-7">
             <h2
               style={{ fontFamily: "var(--font-sora)" }}
               className="text-xl font-bold"

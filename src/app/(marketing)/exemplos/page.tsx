@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Aurora } from "@/components/marketing/aurora";
 import { Reveal } from "@/components/marketing/reveal";
 import { DEMO_FIXTURES } from "@/features/demo/fixtures";
 import { generatePageDocument } from "@/features/generation/rules-engine";
@@ -22,11 +23,12 @@ export default function ExemplosPage() {
   });
 
   return (
-    <main className="mx-auto w-full max-w-[1240px] px-5 py-16 sm:px-8">
+    <main className="relative mx-auto w-full max-w-[1240px] px-5 py-16 sm:px-8">
+      <Aurora className="opacity-60" />
       <Reveal>
         <h1
           style={{ fontFamily: "var(--font-sora)" }}
-          className="max-w-2xl text-balance text-4xl font-bold sm:text-5xl"
+          className="relative max-w-2xl text-balance text-4xl font-bold tracking-tight sm:text-5xl"
         >
           Cada negócio recebe uma página com personalidade própria
         </h1>
@@ -42,7 +44,7 @@ export default function ExemplosPage() {
           <Reveal key={fixture.slug} delay={i * 0.08}>
             <Link
               href={`/exemplos/${fixture.slug}`}
-              className="group block overflow-hidden rounded-2xl border border-white/10 bg-night-850 transition-transform hover:-translate-y-1"
+              className="gradient-border group block overflow-hidden rounded-2xl bg-night-850 transition-transform duration-300 hover:-translate-y-1"
             >
               {/* miniatura composta com os tokens reais do documento gerado */}
               <div
