@@ -1,4 +1,5 @@
 import "server-only";
+import { processTranscription } from "@/features/audio/process";
 import { processCreativeSet } from "@/features/creatives/process";
 import { processGenerationJob } from "@/features/generation/pipeline";
 import { sendEmail } from "@/server/integrations/email";
@@ -17,6 +18,7 @@ export function registerAllJobHandlers(): void {
 
   registerJobHandler("generate_page", processGenerationJob);
   registerJobHandler("generate_creatives", processCreativeSet);
+  registerJobHandler("transcribe_audio", processTranscription);
 
   registerJobHandler("send_email", async (payload) => {
     const result = await sendEmail({

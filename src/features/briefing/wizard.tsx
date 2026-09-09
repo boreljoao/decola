@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Button, Card, Input, Textarea, cx } from "@/components/ui";
 import { ImageUploadField } from "@/features/assets/image-upload";
+import { AudioAnswer } from "@/features/audio/audio-answer";
 import type { ImageRef } from "@/features/generation/page-document";
 import {
   finishBriefingAndGenerate,
@@ -325,14 +326,23 @@ function QuestionInput({
       );
     case "textarea":
       return (
-        <Textarea
-          autoFocus
-          rows={4}
-          value={(value as string) ?? ""}
-          placeholder={question.placeholder}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full text-base"
-        />
+        <div className="grid gap-3">
+          <Textarea
+            autoFocus
+            rows={4}
+            value={(value as string) ?? ""}
+            placeholder={question.placeholder}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full text-base"
+          />
+          {/* Falar costuma ser mais fácil que escrever nas perguntas longas;
+              a digitação continua sendo o caminho principal. */}
+          <AudioAnswer
+            projectId={projectId}
+            questionId={question.id}
+            onAcceptTranscript={(text) => onChange(text)}
+          />
+        </div>
       );
     case "select":
       return (

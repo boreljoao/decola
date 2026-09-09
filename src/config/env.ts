@@ -39,6 +39,8 @@ const rawSchema = z.object({
   // IA
   ANTHROPIC_API_KEY: z.string().optional(),
   GENERATION_MODEL: z.string().default("claude-sonnet-5"),
+  /** Transcrição de áudio do briefing (Whisper). Sem ela, só texto. */
+  OPENAI_API_KEY: z.string().optional(),
 
   // E-mail
   RESEND_API_KEY: z.string().optional(),
@@ -74,6 +76,8 @@ export interface Capabilities {
   mercadopagoPix: boolean;
   /** Geração por LLM (Anthropic). Sem ela, motor determinístico identificado. */
   llmGeneration: boolean;
+  /** Transcrição de áudio. Sem ela, o áudio é gravado mas não transcrito. */
+  audioTranscription: boolean;
   resendEmail: boolean;
   sentry: boolean;
 }
@@ -105,6 +109,7 @@ function build(): Env {
     stripe: Boolean(raw.STRIPE_SECRET_KEY && raw.STRIPE_WEBHOOK_SECRET),
     mercadopagoPix: Boolean(raw.MERCADOPAGO_ACCESS_TOKEN),
     llmGeneration: Boolean(raw.ANTHROPIC_API_KEY),
+    audioTranscription: Boolean(raw.OPENAI_API_KEY),
     resendEmail: Boolean(raw.RESEND_API_KEY && raw.EMAIL_FROM),
     sentry: Boolean(raw.SENTRY_DSN),
   };

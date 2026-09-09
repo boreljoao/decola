@@ -552,6 +552,56 @@ export const assets = pgTable(
   ],
 );
 
+// ── Áudio do briefing ────────────────────────────────────────────────────────
+
+export const transcriptionStatus = pgEnum("transcription_status", [
+  "pending",
+  "processing",
+  "completed",
+  "failed",
+  "unavailable",
+]);
+
+/**
+ * Gravações de áudio das respostas (spec §7.2). O arquivo fica no storage
+ * privado e expira: áudio é dado sensível do cliente, não fica para sempre.
+ */
+export const audioRecordings = pgTable(
+  "audio_recordings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    /** Id da pergunta do briefing a que este áudio responde. */
+    questionId: text("question_id").notNull(),
+    storageKey: text("storage_key").notNull(),
+    mimeType: text("mime_type").notNull(),
+    bytes: integer("bytes").notNull(),
+    durationSeconds: integer("duration_seconds").notNull(),
+    status: transcriptionStatus("status").notNull().default("pending"),
+    transcript: text("transcript"),
+    error: text("error"),
+    /** Expiração do áudio: depois disso o arquivo é removido. */
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdBy: uuid("created_by").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    transcribedAt: timestamp("transcribed_at", { withTimezone: true }),
+  },
+  (t) => [
+    index("audio_project_idx").on(t.projectId),
+    // Um áudio ativo por pergunta: regravar substitui.
+    uniqueIndex("audio_question_unique").on(t.projectId, t.questionId),
+  ],
+);
+
 // ── Criativos ────────────────────────────────────────────────────────────────
 
 export const creativeSetStatus = pgEnum("creative_set_status", [
