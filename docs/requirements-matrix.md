@@ -12,7 +12,7 @@ Estados (spec §0): `verificado` (testado de ponta a ponta localmente), `impleme
 | Workspace, papéis e autorização por recurso (§4) | `requireWorkspace`/`assertRole` em toda ação | verificado |
 | Briefing: 8 módulos, condicionais, origem da resposta (§7.2) | `features/briefing/questions.ts` | verificado (modo rápido E2E); modo completo: implementado_sem_verificacao_externa |
 | Autosave com debounce, indicador e retomada (§7.1) | `saveBriefingAnswers` + wizard | verificado |
-| Áudio por pergunta (§7.2) | — | nao_implementado (exige TranscriptionProvider) |
+| Áudio por pergunta (§7.2) | `features/audio/` — gravar/parar/ouvir/descartar, storage privado, expiração de 30 dias, transcrição assíncrona com revisão antes de aceitar | verificado (upload, recusa de arquivo falso, 403 sem sessão, 4 testes); transcrição automática: bloqueado_por_configuracao (OPENAI_API_KEY) |
 | Pipeline de geração persistente por etapas (§8.1) | `features/generation/pipeline.ts` | verificado |
 | Motor determinístico honesto (D-006) | `rules-engine.ts` + `palettes.ts` | verificado (10 testes) |
 | Geração por LLM com saída estruturada (§8.2) | `anthropic-provider.ts` (tool use + reparo único) | bloqueado_por_configuracao |
@@ -68,7 +68,7 @@ Estados (spec §0): `verificado` (testado de ponta a ponta localmente), `impleme
 | Diário de Bordo mensal idempotente (§13.3) | `reports/monthly.ts` | verificado |
 | Integrações com consentimento (§14/§16) | Meta Pixel e GA por ID validado; RD Station indisponível com motivo | verificado |
 | Equipe: convites com expiração e assentos (§15) | token por hash, aceite nominal | verificado |
-| Marketplace: candidatura → catálogo (§15) | perfis só após aprovação | verificado; "contratar e pagar": bloqueado_por_configuracao (sem provedor de split) |
+| Marketplace: candidatura → aprovação → solicitação → proposta → aceite (§15) | `features/marketplace/` + `/admin/profissionais` + `/app/marketplace` + `/pro` | verificado E2E (ciclo completo no navegador); "contratar e pagar": bloqueado_por_configuracao (sem provedor de split) |
 | Privacidade: exportação e exclusão (§16) | impacto exibido antes; retenção legal preservada | verificado |
 | Admin: fila, pagamentos, privacidade, auditoria (§16) | somente leitura por decisão | verificado |
 | API Business (§15) | `api-keys/` + `/api/v1/*` — chave por hash, escopos, rate limit, OpenAPI | verificado por curl (auth, idempotência, isolamento); exige plano Business |
@@ -78,9 +78,9 @@ Estados (spec §0): `verificado` (testado de ponta a ponta localmente), `impleme
 
 | Requisito | Status |
 |---|---|
-| Gates: lint, TS estrito, build, testes (§19.1) | verificado — **78/78 testes** em 9 arquivos |
+| Gates: lint, TS estrito, build, testes (§19.1) | verificado — **87/87 testes** em 11 arquivos |
 | Invariantes de isolamento entre workspaces (§19.1 item 1) | verificado — 9 testes dedicados (conteúdo, leads cruzados, slug único, créditos, pedidos, convites) |
-| Acessibilidade WCAG AA (§19.3) | verificado — 0 problemas em 10 rotas; 3 falhas corrigidas |
+| Acessibilidade WCAG AA (§19.3) | verificado — 0 problemas nas 10 rotas públicas + app; 4 falhas corrigidas, incluindo página em branco sob `prefers-reduced-motion` |
 | Contraste AA (§19.3) | verificado — 1 falha real corrigida (`mist-700`) |
 | QA visual 360/390/768/desktop (§19.3) | verificado |
 | Lighthouse ≥95 e Core Web Vitals (§19.3) | **não medido** — exige ambiente de produção |

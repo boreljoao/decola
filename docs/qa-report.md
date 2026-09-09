@@ -11,7 +11,7 @@ Regra deste documento (spec §19): **nenhum número aqui é estimado**. Cada lin
 | Lint | `npm run lint` | ✅ sem erros nem avisos |
 | Tipos | `npx tsc --noEmit` (TypeScript estrito) | ✅ sem erros |
 | Build de produção | `npm run build` | ✅ compila; 30 rotas geradas |
-| Testes | `npx vitest run` | ✅ **51/51** em 6 arquivos |
+| Testes | `npx vitest run` | ✅ **87/87** em 11 arquivos |
 
 Nenhuma regra de lint foi desligada e não há `any`, `@ts-ignore` ou cast amplo introduzido para esconder falha.
 
@@ -25,8 +25,13 @@ Nenhuma regra de lint foi desligada e não há `any`, `@ts-ignore` ou cast amplo
 | `tests/credits.test.ts` | 9 | `available = granted − consumed − expired − reserved`; **dois consumos concorrentes não gastam o mesmo saldo**; retry não cobra duas vezes; FEFO; recarga do mesmo período não duplica |
 | `tests/payment-events.test.ts` | 8 | **Webhook repetido não duplica** direito/crédito; eventos distintos no mesmo pedido concedem uma vez; evento fora de ordem não rebaixa pedido pago; **retorno de checkout forjado não ativa plano**; reembolso revoga sem apagar conteúdo |
 | `tests/statistics.test.ts` | 10 | **Experimento sem amostra nunca declara vencedor**; sem significância é inconclusivo; pontos percentuais ≠ variação relativa; guardrail de regressão |
+| `tests/workspace-isolation.test.ts` | 9 | **Dois workspaces não alcançam dados um do outro**: conteúdo, leads cruzados por id de página, slug único global, créditos, pedidos, concessão de plano e convites |
+| `tests/coupons.test.ts` | 11 | **Dois resgates concorrentes do último uso: só um passa**; reserva expirada libera a vaga; resgate idempotente; uso único por workspace |
+| `tests/domains.test.ts` | 7 | Normalização de hostname; **recusa do domínio de publicação da própria Decola** (evita sequestro do host da plataforma) |
+| `tests/validate-audio.test.ts` | 4 | Formato de áudio por magic bytes; **executável e HTML renomeados como .webm são recusados**; limites de tamanho e duração |
+| `tests/marketplace.test.ts` | 5 | Valor da proposta em reais → centavos; tranca o bug em que digitar 450 criava uma proposta de R$ 4,50 |
 
-Os testes de crédito e pagamento rodam contra **PGlite em memória aplicando as migrations reais** — o schema testado é o schema de produção.
+Os testes de crédito, pagamento, cupom e isolamento rodam contra **PGlite em memória aplicando as migrations reais** — o schema testado é o schema de produção.
 
 ## Jornadas verificadas de ponta a ponta no navegador
 
@@ -50,6 +55,10 @@ Os testes de crédito e pagamento rodam contra **PGlite em memória aplicando as
 | Candidatura de profissional persistida + e-mail | ✅ |
 | Voo Contínuo: elegibilidade recusada com motivo real | ✅ (plano Free + 4 visitas) |
 | Diário de Bordo sem tráfego | ✅ ("sem visitas no período — não há taxa a calcular") |
+| **Marketplace, ciclo completo**: candidatura → aprovação no admin → catálogo → solicitação do cliente → proposta de R$ 450,00 → aceite liberando contato | ✅ (aprovar sem conta foi recusado com mensagem acionável; profissional só enxerga a solicitação, nada do workspace do cliente) |
+| API Business: 3 endpoints com chave real | ✅ (auth, escopo, idempotência por chave externa, 404 para página de outro workspace) |
+| Domínio próprio: subdomínio segue 200, domínio não verificado dá 404 | ✅ (plano Free vê a explicação no lugar do formulário) |
+| Áudio no briefing: upload de WebM aceito, HTML disfarçado recusado, 403 sem sessão | ✅ (`transcriptionAvailable: false` honesto sem a chave) |
 
 ## Segurança verificada por tentativa de burla
 
@@ -76,11 +85,14 @@ Viewports inspecionados: **360, 390, 768 e desktop**. Sem overflow horizontal, s
 
 **Resultado: 0 problemas** — nenhuma imagem sem `alt`, nenhum campo sem rótulo, nenhum botão ou link sem nome acessível, exatamente um `h1` por rota.
 
-Três problemas foram **encontrados e corrigidos** nesta rodada:
+Quatro problemas foram **encontrados e corrigidos**:
 
 1. `input[type=file]` do upload sem rótulo → passou a `aria-hidden` + fora da ordem de foco (o botão visível é o controle real).
 2. Campo de item de lista no editor sem rótulo → ganhou `aria-label` com o nome da lista e o índice.
 3. Dois `h1` no editor (o da página e o do preview) → o preview virou região rotulada "Pré-visualização da página em edição".
+4. **Página em branco sob `prefers-reduced-motion`** — o mais grave. O componente de reveal usava `whileInView` do Motion; com movimento reduzido a animação não roda e o elemento fica preso em `opacity: 0`, deixando a home inteira invisível. Detectado por script que mediu a opacidade computada no DOM real (15 blocos invisíveis). O reveal passou a ser CSS + IntersectionObserver, com o estado escondido em **opt-in**: só é aplicado se o usuário permite movimento, o elemento está abaixo da dobra e o JS rodou. Falhando qualquer condição, o conteúdo aparece.
+
+O mesmo diagnóstico revelou que `useReducedMotion()` usado para alternar a marcação quebra a hidratação (o servidor não conhece a preferência). Aurora e Marquee viraram componentes de servidor, com movimento reduzido tratado só em CSS.
 
 ### Contraste (WCAG AA)
 

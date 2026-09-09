@@ -24,7 +24,7 @@ Estado em 2026-09-09. Cada capability é calculada por **configuração válida 
 | Marketplace: repasse/escrow | — | Provedor com split e onboarding de recebedores | — | — | não implementada | Sem provedor; declarado na UI |
 | Sentry | `SENTRY_DSN` | Criar projeto | — | — | não implementada (SDK não instalado) | Decisão de ativação |
 | Rate limit distribuído | — | Redis/Upstash | — | Limiter in-memory testado | não implementada | Só necessário com mais de uma instância |
-| Transcrição de áudio | — | Provedor a escolher | — | — | não implementada | Recurso de áudio do briefing |
+| Transcrição de áudio | `OPENAI_API_KEY` | Chave em platform.openai.com (usa a API de transcrição por HTTP, sem SDK) | — | Gravação, upload validado e storage privado testados E2E; sem a chave o áudio é guardado e reproduzível, e a UI diz que a transcrição não está ativa | implementada, aguardando configuração | Sem chave |
 
 ## Passo a passo mínimo para produção
 
@@ -33,7 +33,7 @@ Estado em 2026-09-09. Cada capability é calculada por **configuração válida 
 3. **Migrations**: `DATABASE_URL=... npx drizzle-kit migrate`.
 4. **Domínio**: registrar; configurar wildcard `*.dominio` e certificado; definir `APP_URL` e `PUBLISH_ROOT_DOMAIN`.
 5. **Cron**: agendar `POST /api/jobs/drain` a cada minuto com o token.
-6. **Opcional por capability**: `ANTHROPIC_API_KEY` (IA), `RESEND_API_KEY` + `EMAIL_FROM` (e-mails reais), Stripe e Mercado Pago (vendas).
+6. **Opcional por capability**: `ANTHROPIC_API_KEY` (geração e edição por IA), `OPENAI_API_KEY` (transcrição do áudio do briefing), `RESEND_API_KEY` + `EMAIL_FROM` (e-mails reais), Stripe e Mercado Pago (vendas).
 
 Sem os itens 1–2, o boot de produção **falha de propósito** (`src/config/env.ts`) — nunca há fallback silencioso para modo de desenvolvimento.
 
