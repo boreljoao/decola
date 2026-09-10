@@ -87,8 +87,27 @@ export interface Env extends RawEnv {
   capabilities: Capabilities;
 }
 
+/**
+ * Uma variável **declarada e vazia** significa "não configurada", e não "valor
+ * inválido". Painéis de deploy (e arquivos .env colados) criam a chave com
+ * valor em branco o tempo todo; sem esta limpeza, `.default()` e `.optional()`
+ * do Zod não se aplicam — eles só valem para `undefined` — e o boot falha com
+ * "Invalid URL" em vez de usar o default.
+ *
+ * O valor em si não é alterado: só decidimos, pelo `trim`, se a chave existe.
+ */
+function definedEntries(source: NodeJS.ProcessEnv): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const [key, value] of Object.entries(source)) {
+    if (typeof value !== "string") continue;
+    if (value.trim() === "") continue;
+    result[key] = value;
+  }
+  return result;
+}
+
 function build(): Env {
-  const parsed = rawSchema.safeParse(process.env);
+  const parsed = rawSchema.safeParse(definedEntries(process.env));
   if (!parsed.success) {
     const issues = parsed.error.issues
       .map((i) => `  - ${i.path.join(".")}: ${i.message}`)
