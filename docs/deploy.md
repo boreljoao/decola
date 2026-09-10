@@ -10,6 +10,19 @@ aviso abaixo). Projeto na Vercel criado e com deploy verde em
 `https://decola-ruby.vercel.app`. Projeto Supabase: **não criado** — por isso
 tudo que precisa de banco ainda responde erro. Domínio: não registrado.
 
+### Estado verificado do deploy (2026-09-10)
+
+Varredura das rotas públicas em `https://decola-ruby.vercel.app`, sem nenhuma
+variável configurada:
+
+| Rotas | Status | Motivo |
+|---|---|---|
+| `/`, `/precos`, `/como-funciona`, `/exemplos`, `/contato`, `/termos`, `/privacidade`, `/cookies` | **200** | estáticas, prerenderizadas no build |
+| `/entrar`, `/cadastro`, `/app`, `/profissionais`, `/pro` | **500** | exigem banco e sessão — o guard de produção derruba de propósito |
+
+Ou seja: o site de marketing está no ar e o produto não. Os 500 somem quando as
+cinco variáveis obrigatórias do passo 4 estiverem configuradas — não são bug.
+
 ### Por que a URL do deploy às vezes pede login
 
 A proteção da Vercel está ligada como `all_except_custom_domains`: todos os
