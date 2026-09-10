@@ -4,9 +4,20 @@ Guia operacional. O que está aqui foi verificado no código; o que depende de
 conta externa está marcado como **você faz** — não invento credencial, domínio,
 projeto Supabase nem resultado de teste que não rodou.
 
-**Estado em 2026-09-09:** código no GitHub em
-[boreljoao/decola](https://github.com/boreljoao/decola) (privado). Projeto
-Supabase: não criado. Projeto na Vercel: não criado. Domínio: não registrado.
+**Estado em 2026-09-10:** código no GitHub em
+[boreljoao/decola](https://github.com/boreljoao/decola) (**público** — veja o
+aviso abaixo). Projeto na Vercel criado e com deploy verde em
+`https://decola-ruby.vercel.app`. Projeto Supabase: **não criado** — por isso
+tudo que precisa de banco ainda responde erro. Domínio: não registrado.
+
+### Por que a URL do deploy às vezes pede login
+
+A proteção da Vercel está ligada como `all_except_custom_domains`: todos os
+endereços `*.vercel.app` exigem login na Vercel, **menos** o domínio de
+produção. Então `decola-ruby.vercel.app` é público e
+`decola-<time>.vercel.app` redireciona para o SSO. Para mostrar o preview a
+outra pessoa antes de ter domínio, use o primeiro — ou desligue a proteção em
+*Settings → Deployment Protection*.
 
 ---
 
@@ -94,7 +105,7 @@ Em *Project → Settings → Environment Variables*, ambiente **Production**:
 | `NEXT_PUBLIC_SUPABASE_URL` | Project URL | **boot falha de propósito** |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon key | **boot falha de propósito** |
 | `SUPABASE_SERVICE_ROLE_KEY` | service_role | uploads não persistem no Storage |
-| `APP_URL` | `https://<seu-dominio>` | links de e-mail e callbacks quebram |
+| `APP_URL` | URL real do deploy | roteamento de domínio próprio desligado; links de e-mail e callbacks quebram |
 | `PUBLISH_ROOT_DOMAIN` | `<seu-dominio>` | páginas publicadas sem endereço |
 | `JOB_DRAIN_TOKEN` | hex de 32 bytes | cron de retentativa não autentica |
 | `CRON_SECRET` | **mesmo valor** de `JOB_DRAIN_TOKEN` | idem |

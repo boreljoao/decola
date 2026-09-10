@@ -19,6 +19,11 @@ export function proxy(request: NextRequest) {
     .replace(/:\d+$/, "");
   const appHost = safeHost(process.env.APP_URL ?? "http://localhost:3000");
 
+  // Classificar um host como "domínio de cliente" exige saber qual é o host do
+  // app. Sem APP_URL não sabemos, e o default de dev (localhost) não bate com
+  // nada em produção.
+  const appHostKnown = (process.env.APP_URL ?? "").trim() !== "";
+
   const isAppHost = rawHost === appHost || host === appHost.replace(/:\d+$/, "");
 
   // 1. Subdomínio Decola: {slug}.<root>
@@ -35,7 +40,12 @@ export function proxy(request: NextRequest) {
   // 2. Domínio próprio: qualquer outro host válido é resolvido por mapeamento
   //    verificado no banco (o proxy não consulta banco; a rota faz isso e
   //    recusa hosts sem verificação de posse).
-  if (!isAppHost && host !== root && HOST_RE.test(host)) {
+  //
+  //    Só com APP_URL configurada. Sem ela, o host do primeiro deploy
+  //    (`*.vercel.app`) cairia aqui e TODA requisição — inclusive a home
+  //    estática — viraria busca de um domínio de cliente que não existe. O site
+  //    inteiro respondia 500 antes de renderizar qualquer coisa.
+  if (appHostKnown && !isAppHost && host !== root && HOST_RE.test(host)) {
     const url = request.nextUrl.clone();
     url.pathname = `/sites/dominio/${encodeURIComponent(host)}`;
     return NextResponse.rewrite(url);
