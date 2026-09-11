@@ -9,7 +9,6 @@ export function AmbientVideo({ className = "" }: { className?: string }) {
   useEffect(() => {
     const element = video.current;
     if (!element) return;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
     // Set the DOM properties as well as JSX attributes before attempting autoplay.
     element.defaultMuted = true;
     element.muted = true;
@@ -17,7 +16,9 @@ export function AmbientVideo({ className = "" }: { className?: string }) {
     element.playbackRate = 0.8;
     let visible = true;
     const sync = () => {
-      if (!reduced.matches && visible && !document.hidden) {
+      // The hero film is intentionally automatic, as requested by the site owner.
+      // Reduced-motion preferences still govern interface and scroll animations.
+      if (visible && !document.hidden) {
         if (!element.paused) {
           setPlaying(true);
           return;
@@ -42,7 +43,6 @@ export function AmbientVideo({ className = "" }: { className?: string }) {
     element.addEventListener("canplay", sync);
     document.addEventListener("pointerdown", sync, { passive: true });
     document.addEventListener("keydown", sync);
-    reduced.addEventListener("change", sync);
     sync();
     return () => {
       observer?.disconnect();
@@ -50,7 +50,6 @@ export function AmbientVideo({ className = "" }: { className?: string }) {
       element.removeEventListener("canplay", sync);
       document.removeEventListener("pointerdown", sync);
       document.removeEventListener("keydown", sync);
-      reduced.removeEventListener("change", sync);
       element.pause();
     };
   }, []);
