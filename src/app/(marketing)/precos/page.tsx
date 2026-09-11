@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Aurora } from "@/components/marketing/aurora";
 import { Reveal } from "@/components/marketing/reveal";
 import { SpotlightCard } from "@/components/marketing/spotlight-card";
 import { formatBRL, PLANS, type PlanDef } from "@/config/commercial-policy";
@@ -41,7 +40,9 @@ function PlanCard({
     e.showDecolaBadge ? "Com marca Decola no rodapé" : "Sem marca Decola",
     ...(e.vooContinuo ? ["Voo Contínuo (elegível por tráfego)"] : []),
     ...(e.creativesPerMonth.value > 0
-      ? [`${e.creativesPerMonth.value} criativos/mês${e.creativesPerMonth.status === "draft" ? " (franquia em definição)" : ""}`]
+      ? [
+          `${e.creativesPerMonth.value} criativos/mês${e.creativesPerMonth.status === "draft" ? " (franquia em definição)" : ""}`,
+        ]
       : []),
     `${e.seats} ${e.seats > 1 ? "assentos" : "assento"}`,
     ...(e.api ? ["API de integração"] : []),
@@ -51,18 +52,18 @@ function PlanCard({
     <Reveal delay={delay}>
       <SpotlightCard
         className={`flex h-full flex-col p-7 ${
-          plan.highlight ? "ring-1 ring-ember-500/40" : ""
+          plan.highlight ? "ring-1 ring-electric-500/30" : ""
         }`}
       >
         {plan.highlight && (
-          <span className="absolute -top-3 left-6 rounded-full bg-ember-500 px-3 py-1 text-xs font-bold text-night-950">
+          <span className="mb-4 self-start rounded-full bg-ink-900 px-3 py-1 text-xs font-medium text-white">
             {plan.highlight}
           </span>
         )}
         <h2 className="text-lg font-semibold">{plan.name}</h2>
         <p
           style={{ fontFamily: "var(--font-sora)" }}
-          className="tabular mt-3 text-3xl font-bold"
+          className="tabular mt-3 text-3xl font-semibold tracking-tight"
         >
           {plan.id === "vitalicio"
             ? `${formatBRL(plan.oneTimePriceCents!.value)} único`
@@ -72,19 +73,21 @@ function PlanCard({
                 ? "R$ 0"
                 : formatBRL(monthly)}
           {monthly != null && monthly > 0 && (
-            <span className="text-base font-normal text-mist-500">/mês</span>
+            <span className="text-base font-normal text-ink-600">/mês</span>
           )}
         </p>
-        {plan.annualPriceCents.value != null && plan.annualPriceCents.value > 0 && (
-          <p className="mt-1 text-xs text-mist-500">
-            Anual: {formatBRL(plan.annualPriceCents.value)} cobrados uma vez ao
-            ano (equivale a {formatBRL(Math.round(plan.annualPriceCents.value / 12))}/mês)
-          </p>
-        )}
-        <ul className="mt-5 grid flex-1 gap-2.5 text-sm text-mist-300">
+        {plan.annualPriceCents.value != null &&
+          plan.annualPriceCents.value > 0 && (
+            <p className="mt-1 text-xs text-ink-600">
+              Anual: {formatBRL(plan.annualPriceCents.value)} cobrados uma vez
+              ao ano (equivale a{" "}
+              {formatBRL(Math.round(plan.annualPriceCents.value / 12))}/mês)
+            </p>
+          )}
+        <ul className="mt-5 grid flex-1 gap-2.5 text-sm text-ink-600">
           {rows.map((r) => (
             <li key={r} className="flex gap-2">
-              <span className="text-electric-400">✓</span>
+              <span className="text-electric-700">✓</span>
               {r}
             </li>
           ))}
@@ -93,7 +96,7 @@ function PlanCard({
           {plan.id === "free" ? (
             <Link
               href="/cadastro"
-              className="block rounded-xl bg-ember-500 py-3 text-center text-sm font-semibold text-night-950 transition-colors hover:bg-ember-400"
+              className="block rounded-xl bg-ink-900 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-ink-600"
             >
               Decolar grátis
             </Link>
@@ -117,16 +120,15 @@ export default function PrecosPage() {
   const providers = paymentAvailability();
   const ordered = [PLANS.free, PLANS.start, PLANS.pro, PLANS.business];
   return (
-    <main className="relative mx-auto w-full max-w-[1240px] px-5 py-16 sm:px-8">
-      <Aurora className="opacity-60" />
+    <main className="interior-page relative mx-auto w-full max-w-[1240px] px-5 py-16 sm:px-8">
       <Reveal>
         <h1
-          style={{ fontFamily: "var(--font-sora)" }}
-          className="relative max-w-2xl text-balance text-4xl font-bold tracking-tight sm:text-5xl"
+          style={{ fontFamily: "var(--font-editorial)" }}
+          className="page-heading relative max-w-2xl text-balance text-4xl font-bold tracking-tight sm:text-5xl"
         >
           Preços diretos, sem letra miúda
         </h1>
-        <p className="mt-5 max-w-2xl text-lg text-mist-300">
+        <p className="mt-5 max-w-2xl text-lg text-ink-600">
           Publique sua primeira página grátis. Os planos pagos removem a marca
           Decola, liberam domínio próprio e ampliam os limites.
         </p>
@@ -145,27 +147,27 @@ export default function PrecosPage() {
 
       <Reveal>
         <div className="mt-10 grid gap-5 md:grid-cols-2">
-          <div className="rounded-2xl border border-white/8 bg-night-850 p-7">
+          <div className="rounded-2xl border border-ink-900/10 bg-card p-7">
             <h2 className="text-lg font-semibold">Vitalício — R$ 297 único</h2>
-            <p className="mt-3 text-sm leading-relaxed text-mist-300">
+            <p className="mt-3 text-sm leading-relaxed text-ink-600">
               Licença de uma página estática, com hospedagem anual cobrada à
               parte. Não inclui otimização contínua nem recarga mensal de
               créditos.
             </p>
-            <p className="mt-3 text-xs text-mist-500">
+            <p className="mt-3 text-xs text-ink-600">
               Disponível quando o valor anual de hospedagem for definido e
               exibido — sem surpresa depois da compra.
             </p>
           </div>
-          <div className="rounded-2xl border border-white/8 bg-night-850 p-7">
+          <div className="rounded-2xl border border-ink-900/10 bg-card p-7">
             <h2 className="text-lg font-semibold">Agência</h2>
-            <p className="mt-3 text-sm leading-relaxed text-mist-300">
+            <p className="mt-3 text-sm leading-relaxed text-ink-600">
               Revenda e gestão de clientes com white-label parcial. Contratação
               sob consulta enquanto contrato e preço estão em definição.
             </p>
             <Link
               href="/cadastro"
-              className="mt-4 inline-block text-sm font-semibold text-electric-300 hover:underline"
+              className="mt-4 inline-block text-sm font-semibold text-electric-700 hover:underline"
             >
               Falar com a Decola →
             </Link>
@@ -202,15 +204,15 @@ export default function PrecosPage() {
             ].map((item) => (
               <details
                 key={item.q}
-                className="group rounded-2xl border border-white/8 bg-night-850 p-5"
+                className="group rounded-2xl border border-ink-900/10 bg-card p-5"
               >
                 <summary className="cursor-pointer list-none font-semibold [&::-webkit-details-marker]:hidden">
-                  <span className="mr-2 inline-block text-electric-400 transition-transform group-open:rotate-90">
+                  <span className="mr-2 inline-block text-electric-700 transition-transform group-open:rotate-90">
                     ▸
                   </span>
                   {item.q}
                 </summary>
-                <p className="mt-3 leading-relaxed text-mist-300">{item.a}</p>
+                <p className="mt-3 leading-relaxed text-ink-600">{item.a}</p>
               </details>
             ))}
           </div>

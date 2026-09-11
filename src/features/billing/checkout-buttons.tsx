@@ -41,10 +41,10 @@ export function CheckoutButtons({
   if (blockedReason) {
     return (
       <div className="grid gap-2">
-        <span className="block cursor-not-allowed rounded-xl border border-white/15 py-3 text-center text-sm font-semibold text-mist-500">
+        <span className="block cursor-not-allowed rounded-xl border border-ink-900/15 py-3 text-center text-sm font-semibold text-ink-600">
           Sob consulta
         </span>
-        <p className="text-center text-xs text-mist-700">{blockedReason}</p>
+        <p className="text-center text-xs text-ink-600">{blockedReason}</p>
       </div>
     );
   }
@@ -52,12 +52,11 @@ export function CheckoutButtons({
   if (!anyAvailable) {
     return (
       <div className="grid gap-2">
-        <span className="block cursor-not-allowed rounded-xl border border-white/15 py-3 text-center text-sm font-semibold text-mist-500">
+        <span className="block cursor-not-allowed rounded-xl border border-ink-900/15 py-3 text-center text-sm font-semibold text-ink-600">
           Contratação em breve
         </span>
-        <p className="text-center text-xs text-mist-700">
-          {providers.find((p) => p.reason)?.reason ??
-            "Pagamento em ativação."}{" "}
+        <p className="text-center text-xs text-ink-600">
+          {providers.find((p) => p.reason)?.reason ?? "Pagamento em ativação."}{" "}
           Comece no Free — seu trabalho é preservado no upgrade.
         </p>
       </div>
@@ -115,19 +114,19 @@ export function CheckoutButtons({
             placeholder="Cupom (opcional)"
             aria-label="Código do cupom"
             maxLength={40}
-            className="min-w-0 flex-1 rounded-xl border border-white/15 bg-night-850 px-3 py-2 text-sm text-mist-100 placeholder:text-mist-700"
+            className="min-w-0 flex-1 rounded-xl border border-ink-900/15 bg-card px-3 py-2 text-sm text-ink-900 placeholder:text-ink-600"
           />
           <button
             type="button"
             onClick={checkCoupon}
             disabled={pending || couponCode.trim().length === 0}
-            className="rounded-xl border border-white/15 px-3 py-2 text-xs font-semibold text-mist-100 disabled:opacity-40"
+            className="rounded-xl border border-ink-900/15 px-3 py-2 text-xs font-semibold text-ink-900 disabled:opacity-40"
           >
             Aplicar
           </button>
         </div>
         {couponState?.kind === "ok" && (
-          <p className="text-xs font-medium text-electric-300">
+          <p className="text-xs font-medium text-electric-700">
             {couponState.label} aplicado — total{" "}
             {(couponState.finalCents / 100).toLocaleString("pt-BR", {
               style: "currency",
@@ -136,7 +135,7 @@ export function CheckoutButtons({
           </p>
         )}
         {couponState?.kind === "error" && (
-          <p role="alert" className="text-xs font-medium text-red-400">
+          <p role="alert" className="text-xs font-medium text-danger-600">
             {couponState.message}
           </p>
         )}
@@ -159,19 +158,22 @@ export function CheckoutButtons({
       {providers
         .filter((p) => !p.available)
         .map((p) => (
-          <p key={p.id} className="text-center text-xs text-mist-700">
+          <p key={p.id} className="text-center text-xs text-ink-600">
             {p.label}: {p.reason}
           </p>
         ))}
 
       {error && (
-        <p role="alert" className="text-center text-xs font-medium text-red-400">
+        <p
+          role="alert"
+          className="text-center text-xs font-medium text-danger-600"
+        >
           {error}
         </p>
       )}
 
       {pix && (
-        <div className="grid gap-2 rounded-xl border border-white/15 bg-night-800 p-4">
+        <div className="grid gap-2 rounded-xl border border-ink-900/15 bg-paper p-4">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold">Pague com Pix</p>
             <Badge tone="warning">confirmando</Badge>
@@ -188,13 +190,13 @@ export function CheckoutButtons({
             type="button"
             onClick={() => navigator.clipboard?.writeText(pix.copyPaste)}
             className={cx(
-              "truncate rounded-lg border border-white/15 px-3 py-2 text-left text-xs",
-              "hover:bg-white/5",
+              "truncate rounded-lg border border-ink-900/15 px-3 py-2 text-left text-xs",
+              "hover:bg-paper",
             )}
           >
             Copiar código: {pix.copyPaste.slice(0, 32)}…
           </button>
-          <p className="text-xs text-mist-500">
+          <p className="text-xs text-ink-600">
             Válido até{" "}
             {new Date(pix.expiresAt).toLocaleString("pt-BR", {
               timeZone: "America/Sao_Paulo",

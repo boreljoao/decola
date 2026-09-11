@@ -4,15 +4,18 @@ export const metadata: Metadata = { title: "Termos de uso" };
 
 export default function TermosPage() {
   return (
-    <main className="mx-auto w-full max-w-3xl px-5 py-16 sm:px-8">
-      <h1 style={{ fontFamily: "var(--font-sora)" }} className="text-3xl font-bold">
+    <main className="legal-page mx-auto w-full max-w-3xl px-5 py-16 sm:px-8">
+      <h1
+        style={{ fontFamily: "var(--font-editorial)" }}
+        className="page-heading text-3xl font-bold"
+      >
         Termos de uso
       </h1>
-      <p className="mt-2 text-sm text-mist-500">
+      <p className="mt-2 text-sm text-ink-600">
         Minuta em vigor durante o período de desenvolvimento — sujeita a revisão
         jurídica antes do lançamento comercial.
       </p>
-      <div className="prose-invert mt-8 grid gap-5 leading-relaxed text-mist-300">
+      <div className="mt-8 grid gap-5 leading-relaxed text-ink-600">
         <p>
           1. A Decola é uma plataforma que gera landing pages e materiais de
           divulgação a partir de informações fornecidas por você. O conteúdo

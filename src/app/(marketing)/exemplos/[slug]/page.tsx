@@ -23,19 +23,17 @@ export default async function ExemploPage(
 
   return (
     <div>
-      <div className="sticky top-[57px] z-30 border-b border-white/10 bg-night-900/90 px-4 py-2.5 text-center text-sm text-mist-300 backdrop-blur">
+      <div className="sticky top-[78px] max-md:top-[70px] z-30 border-b border-ink-900/10 bg-white/95 px-4 py-2.5 text-center text-sm text-ink-600 backdrop-blur">
         Demonstração com negócio fictício ({fixture.nicheLabel}) — composta pelo
         motor real da Decola.{" "}
-        <Link href="/cadastro" className="font-semibold text-ember-400 hover:underline">
+        <Link
+          href="/cadastro"
+          className="font-semibold text-electric-700 hover:underline"
+        >
           Crie a sua →
         </Link>
       </div>
-      <PageRenderer
-        doc={doc}
-        pageId={fixture.revisionId}
-        preview
-        showBadge
-      />
+      <PageRenderer doc={doc} pageId={fixture.revisionId} preview showBadge />
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Aurora, DotGrid } from "@/components/marketing/aurora";
 import { Reveal } from "@/components/marketing/reveal";
 import { SpotlightCard } from "@/components/marketing/spotlight-card";
 
@@ -63,19 +62,17 @@ const STEPS = [
 
 export default function ComoFuncionaPage() {
   return (
-    <main className="relative">
+    <main className="interior-page relative">
       <section className="relative overflow-hidden">
-        <Aurora />
-        <DotGrid />
         <div className="relative mx-auto w-full max-w-[1240px] px-5 py-20 sm:px-8">
           <Reveal>
             <h1
-              style={{ fontFamily: "var(--font-sora)" }}
-              className="max-w-2xl text-balance text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl"
+              style={{ fontFamily: "var(--font-editorial)" }}
+              className="page-heading max-w-2xl text-balance text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl"
             >
               Da primeira pergunta à página no ar
             </h1>
-            <p className="mt-5 max-w-2xl text-lg leading-relaxed text-mist-300">
+            <p className="mt-5 max-w-2xl text-lg leading-relaxed text-ink-600">
               A Decola não pede que você aprenda design. Pede boas respostas — e
               devolve uma página com a sua identidade, pronta para receber
               clientes.
@@ -93,7 +90,7 @@ export default function ComoFuncionaPage() {
                   <div className="flex items-start gap-4">
                     <span
                       style={{ fontFamily: "var(--font-sora)" }}
-                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-electric-500/25 bg-electric-500/10 text-lg font-bold text-electric-300"
+                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-electric-500/25 bg-electric-500/10 text-lg font-bold text-electric-700"
                     >
                       {step.number}
                     </span>
@@ -106,8 +103,8 @@ export default function ComoFuncionaPage() {
                   </div>
 
                   <div>
-                    <p className="leading-relaxed text-mist-300">{step.text}</p>
-                    <p className="mt-3 text-sm leading-relaxed text-mist-500">
+                    <p className="leading-relaxed text-ink-600">{step.text}</p>
+                    <p className="mt-3 text-sm leading-relaxed text-ink-600">
                       {step.detail}
                     </p>
                   </div>
@@ -116,7 +113,7 @@ export default function ComoFuncionaPage() {
                     {step.aside.map((item) => (
                       <li
                         key={item}
-                        className="rounded-lg border border-white/8 bg-night-800/60 px-3.5 py-2.5 text-sm text-mist-300"
+                        className="rounded-lg border border-ink-900/10 bg-paper/60 px-3.5 py-2.5 text-sm text-ink-600"
                       >
                         {item}
                       </li>
@@ -132,11 +129,11 @@ export default function ComoFuncionaPage() {
           <div className="mt-16 text-center">
             <Link
               href="/cadastro"
-              className="inline-block rounded-xl bg-ember-500 px-8 py-4 text-lg font-semibold text-night-950 shadow-[0_8px_40px_-8px_rgb(237_164_40/0.55)] transition-all hover:-translate-y-0.5 hover:bg-ember-400"
+              className="inline-block rounded-xl bg-ink-900 px-8 py-4 text-lg font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-ink-600"
             >
               Começar meu briefing ✦
             </Link>
-            <p className="mt-3 text-sm text-mist-500">
+            <p className="mt-3 text-sm text-ink-600">
               Grátis, sem cartão. Suas respostas ficam salvas.
             </p>
           </div>

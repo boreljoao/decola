@@ -7,8 +7,8 @@ import {
   type FormResult,
 } from "./actions";
 
-/** Campos com estilo do tema escuro do marketing. */
-function DarkField({
+/** Campos de marketing: superfícies claras e foco visível. */
+function MarketingField({
   label,
   hint,
   children,
@@ -19,27 +19,27 @@ function DarkField({
 }) {
   return (
     <label className="grid gap-1.5">
-      <span className="text-sm font-medium text-mist-100">{label}</span>
-      {hint && <span className="text-xs text-mist-500">{hint}</span>}
+      <span className="text-sm font-medium text-ink-900">{label}</span>
+      {hint && <span className="text-xs text-ink-600">{hint}</span>}
       {children}
     </label>
   );
 }
 
 const inputClass =
-  "rounded-xl border border-white/15 bg-night-850 px-3.5 py-2.5 text-sm text-mist-100 placeholder:text-mist-700 focus:border-electric-500 focus:outline-none";
+  "rounded-xl border border-ink-900/15 bg-card px-3.5 py-3 text-base text-ink-900 placeholder:text-ink-600 focus:border-electric-500";
 
 function Feedback({ state }: { state: FormResult }) {
   if (state.error) {
     return (
-      <p role="alert" className="text-sm font-medium text-red-400">
+      <p role="alert" className="text-sm font-medium text-danger-600">
         {state.error}
       </p>
     );
   }
   if (state.ok && state.message) {
     return (
-      <p className="rounded-xl bg-electric-600/10 px-4 py-3 text-sm text-electric-300">
+      <p className="rounded-xl bg-electric-600/10 px-4 py-3 text-sm text-electric-700">
         {state.message}
       </p>
     );
@@ -56,10 +56,10 @@ export function ProfessionalApplicationForm() {
   return (
     <form action={action} className="grid gap-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <DarkField label="Seu nome">
+        <MarketingField label="Seu nome">
           <input name="name" required maxLength={120} className={inputClass} />
-        </DarkField>
-        <DarkField label="E-mail">
+        </MarketingField>
+        <MarketingField label="E-mail">
           <input
             name="email"
             type="email"
@@ -67,22 +67,26 @@ export function ProfessionalApplicationForm() {
             className={inputClass}
             placeholder="voce@exemplo.com.br"
           />
-        </DarkField>
+        </MarketingField>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <DarkField label="Telefone (opcional)">
-          <input name="phone" className={inputClass} placeholder="(11) 91234-5678" />
-        </DarkField>
-        <DarkField label="Especialidade">
+        <MarketingField label="Telefone (opcional)">
+          <input
+            name="phone"
+            className={inputClass}
+            placeholder="(11) 91234-5678"
+          />
+        </MarketingField>
+        <MarketingField label="Especialidade">
           <input
             name="specialty"
             required
             className={inputClass}
             placeholder="Ex.: copywriting, design de páginas, tráfego pago"
           />
-        </DarkField>
+        </MarketingField>
       </div>
-      <DarkField
+      <MarketingField
         label="Sua experiência"
         hint="Conte onde você já atuou e que tipo de negócio você atende melhor."
       >
@@ -94,10 +98,18 @@ export function ProfessionalApplicationForm() {
           maxLength={2000}
           className={inputClass}
         />
-      </DarkField>
-      <DarkField label="Portfólio (opcional)" hint="Um link https para o seu trabalho.">
-        <input name="portfolioUrl" type="url" className={inputClass} placeholder="https://" />
-      </DarkField>
+      </MarketingField>
+      <MarketingField
+        label="Portfólio (opcional)"
+        hint="Um link https para o seu trabalho."
+      >
+        <input
+          name="portfolioUrl"
+          type="url"
+          className={inputClass}
+          placeholder="https://"
+        />
+      </MarketingField>
 
       <Feedback state={state} />
 
@@ -105,7 +117,7 @@ export function ProfessionalApplicationForm() {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-xl bg-ember-500 px-7 py-3 text-sm font-semibold text-night-950 transition-colors hover:bg-ember-400 disabled:opacity-60"
+          className="rounded-xl bg-ink-900 min-h-11 px-7 py-3 text-sm font-semibold text-white transition-colors hover:bg-ink-600 disabled:opacity-60"
         >
           {pending ? "Enviando…" : "Enviar candidatura"}
         </button>
@@ -124,19 +136,19 @@ export function ContactForm({ kind }: { kind: "contato" | "agencia" }) {
     <form action={action} className="grid gap-4">
       <input type="hidden" name="kind" value={kind} />
       <div className="grid gap-4 sm:grid-cols-2">
-        <DarkField label="Seu nome">
+        <MarketingField label="Seu nome">
           <input name="name" required maxLength={120} className={inputClass} />
-        </DarkField>
-        <DarkField label="E-mail">
+        </MarketingField>
+        <MarketingField label="E-mail">
           <input name="email" type="email" required className={inputClass} />
-        </DarkField>
+        </MarketingField>
       </div>
-      <DarkField
+      <MarketingField
         label={kind === "agencia" ? "Agência" : "Empresa (opcional)"}
       >
         <input name="company" maxLength={120} className={inputClass} />
-      </DarkField>
-      <DarkField
+      </MarketingField>
+      <MarketingField
         label="Mensagem"
         hint={
           kind === "agencia"
@@ -152,7 +164,7 @@ export function ContactForm({ kind }: { kind: "contato" | "agencia" }) {
           maxLength={2000}
           className={inputClass}
         />
-      </DarkField>
+      </MarketingField>
 
       <Feedback state={state} />
 
@@ -160,7 +172,7 @@ export function ContactForm({ kind }: { kind: "contato" | "agencia" }) {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-xl bg-ember-500 px-7 py-3 text-sm font-semibold text-night-950 transition-colors hover:bg-ember-400 disabled:opacity-60"
+          className="rounded-xl bg-ink-900 min-h-11 px-7 py-3 text-sm font-semibold text-white transition-colors hover:bg-ink-600 disabled:opacity-60"
         >
           {pending ? "Enviando…" : "Enviar mensagem"}
         </button>
