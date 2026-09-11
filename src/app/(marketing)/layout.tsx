@@ -1,22 +1,7 @@
 import Link from "next/link";
-
-const NAV = [
-  { href: "/como-funciona", label: "Como funciona" },
-  { href: "/exemplos", label: "Exemplos" },
-  { href: "/precos", label: "Preços" },
-  { href: "/profissionais", label: "Profissionais" },
-] as const;
-
-const FOOTER_COMPANY = [
-  { href: "/agencias", label: "Para agências" },
-  { href: "/contato", label: "Contato" },
-] as const;
-
-const FOOTER_LEGAL = [
-  { href: "/termos", label: "Termos de uso" },
-  { href: "/privacidade", label: "Privacidade" },
-  { href: "/cookies", label: "Cookies" },
-] as const;
+import { ArrowUpRight } from "lucide-react";
+import { Brand } from "@/components/brand";
+import { MarketingHeader } from "@/components/marketing/header";
 
 export default function MarketingLayout({
   children,
@@ -24,103 +9,51 @@ export default function MarketingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col bg-night-900 text-mist-100">
-      <header className="sticky top-0 z-40 border-b border-white/5 bg-night-900/85 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-[1240px] items-center justify-between gap-4 px-5 py-3.5 sm:px-8">
-          <Link
-            href="/"
-            style={{ fontFamily: "var(--font-sora)" }}
-            className="text-xl font-bold tracking-tight"
-          >
-            decola<span className="text-electric-400">✦</span>
-          </Link>
-          <nav className="hidden items-center gap-1 md:flex" aria-label="Principal">
-            {NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-mist-300 transition-colors hover:bg-white/5 hover:text-mist-100"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/entrar"
-              className="rounded-lg px-3 py-2 text-sm font-medium text-mist-300 transition-colors hover:text-mist-100"
-            >
-              Entrar
-            </Link>
-            <Link
-              href="/cadastro"
-              className="rounded-xl bg-ember-500 px-4 py-2 text-sm font-semibold text-night-950 transition-colors hover:bg-ember-400"
-            >
-              Decolar grátis
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <div className="flex-1">{children}</div>
-
-      <footer className="border-t border-white/5">
-        <div className="mx-auto grid w-full max-w-[1240px] gap-8 px-5 py-12 sm:px-8 md:grid-cols-3">
+    <div className="marketing-shell">
+      <a href="#conteudo" className="skip-link">
+        Pular para o conteúdo
+      </a>
+      <MarketingHeader />
+      <div id="conteudo" tabIndex={-1} className="marketing-content">
+        {children}
+      </div>
+      <footer className="site-footer">
+        <div className="site-container footer-grid">
           <div>
-            <p style={{ fontFamily: "var(--font-sora)" }} className="text-lg font-bold">
-              decola<span className="text-electric-400">✦</span>
+            <Brand />
+            <p>
+              Boas ideias merecem
+              <br />
+              encontrar seus clientes.
             </p>
-            <p className="mt-3 max-w-xs text-sm leading-relaxed text-mist-500">
-              Você não precisa aprender design. Você precisa ser bem perguntado.
-              E nunca mais voar sozinho depois da decolagem.
-            </p>
+            <Link href="/cadastro" className="text-link">
+              Vamos decolar <ArrowUpRight size={16} aria-hidden="true" />
+            </Link>
           </div>
-          <nav aria-label="Produto" className="text-sm">
-            <p className="font-semibold text-mist-300">Produto</p>
-            <ul className="mt-3 grid gap-2 text-mist-500">
-              {NAV.map((item) => (
-                <li key={item.href}>
-                  <Link href={item.href} className="hover:text-mist-100">
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-              <li>
-                <Link href="/cadastro" className="hover:text-mist-100">
-                  Criar conta grátis
-                </Link>
-              </li>
-            </ul>
+          <nav aria-label="Produto">
+            <span className="footer-label">Explore</span>
+            <Link href="/como-funciona">Como funciona</Link>
+            <Link href="/exemplos">Exemplos</Link>
+            <Link href="/precos">Preços</Link>
+            <Link href="/profissionais">Profissionais</Link>
           </nav>
-          <div className="grid gap-6 text-sm sm:grid-cols-2">
-            <nav aria-label="Empresa">
-              <p className="font-semibold text-mist-300">Empresa</p>
-              <ul className="mt-3 grid gap-2 text-mist-500">
-                {FOOTER_COMPANY.map((item) => (
-                  <li key={item.href}>
-                    <Link href={item.href} className="hover:text-mist-100">
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-            <nav aria-label="Legal">
-              <p className="font-semibold text-mist-300">Legal</p>
-              <ul className="mt-3 grid gap-2 text-mist-500">
-                {FOOTER_LEGAL.map((item) => (
-                  <li key={item.href}>
-                    <Link href={item.href} className="hover:text-mist-100">
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          </div>
+          <nav aria-label="Empresa">
+            <span className="footer-label">Decola</span>
+            <Link href="/agencias">Para agências</Link>
+            <Link href="/contato">Fale com a gente</Link>
+            <Link href="/entrar">Minha conta</Link>
+          </nav>
+          <nav aria-label="Legal">
+            <span className="footer-label">Transparência</span>
+            <Link href="/termos">Termos de uso</Link>
+            <Link href="/privacidade">Privacidade</Link>
+            <Link href="/cookies">Cookies</Link>
+          </nav>
         </div>
-        <div className="border-t border-white/5 py-5 text-center text-xs text-mist-700">
-          © {new Date().getFullYear()} Decola. Plataforma em desenvolvimento.
+        <div className="site-container footer-bottom">
+          <span>© {new Date().getFullYear()} Decola</span>
+          <span>Feita para negócios brasileiros.</span>
+          <span>Plataforma em desenvolvimento</span>
         </div>
       </footer>
     </div>

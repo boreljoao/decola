@@ -6,16 +6,18 @@ export function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }
 
-type ButtonVariant = "primary" | "commercial" | "secondary" | "ghost" | "danger";
+type ButtonVariant =
+  "primary" | "commercial" | "secondary" | "ghost" | "danger";
 
 const BUTTON_STYLES: Record<ButtonVariant, string> = {
   primary:
-    "bg-electric-600 text-white shadow-sm shadow-electric-600/25 hover:bg-electric-700 hover:shadow-md hover:shadow-electric-600/30 active:translate-y-px disabled:bg-electric-600/50 disabled:shadow-none",
+    "bg-electric-600 text-white shadow-sm hover:bg-electric-700 active:translate-y-px disabled:opacity-50 disabled:shadow-none",
   commercial:
-    "bg-ember-500 text-night-950 shadow-sm shadow-ember-500/30 hover:bg-ember-600 hover:shadow-md hover:shadow-ember-500/35 active:translate-y-px disabled:bg-ember-500/50 disabled:shadow-none",
+    "bg-ink-900 text-white shadow-sm hover:bg-ink-600 active:translate-y-px disabled:opacity-50 disabled:shadow-none",
   secondary:
     "border border-ink-900/15 bg-white text-ink-900 hover:border-ink-900/25 hover:bg-paper active:translate-y-px disabled:opacity-50",
-  ghost: "text-ink-600 hover:bg-ink-900/5 hover:text-ink-900 disabled:opacity-50",
+  ghost:
+    "text-ink-600 hover:bg-ink-900/5 hover:text-ink-900 disabled:opacity-50",
   danger:
     "border border-danger-600/30 text-danger-600 hover:border-danger-600/50 hover:bg-danger-600/5 active:translate-y-px disabled:opacity-50",
 };
@@ -29,7 +31,7 @@ export function Button({
     <button
       {...props}
       className={cx(
-        "inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-150 disabled:cursor-not-allowed",
+        "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-200 disabled:cursor-not-allowed",
         BUTTON_STYLES[variant],
         className,
       )}
@@ -70,7 +72,7 @@ export function Input({
     <input
       {...props}
       className={cx(
-        "rounded-xl border border-ink-900/15 bg-white px-3.5 py-2.5 text-sm text-ink-900 transition-colors placeholder:text-ink-400 hover:border-ink-900/25 focus:border-electric-500",
+        "rounded-xl border border-ink-900/15 bg-white px-3.5 py-3 text-base text-ink-900 transition-colors placeholder:text-ink-400 hover:border-ink-900/25 focus:border-electric-500",
         className,
       )}
     />
@@ -85,7 +87,7 @@ export function Textarea({
     <textarea
       {...props}
       className={cx(
-        "rounded-xl border border-ink-900/15 bg-white px-3.5 py-2.5 text-sm text-ink-900 transition-colors placeholder:text-ink-400 hover:border-ink-900/25 focus:border-electric-500",
+        "rounded-xl border border-ink-900/15 bg-white px-3.5 py-3 text-base text-ink-900 transition-colors placeholder:text-ink-400 hover:border-ink-900/25 focus:border-electric-500",
         className,
       )}
     />
@@ -100,7 +102,7 @@ export function Select({
     <select
       {...props}
       className={cx(
-        "rounded-xl border border-ink-900/15 bg-white px-3.5 py-2.5 text-sm text-ink-900 focus:border-electric-500",
+        "rounded-xl border border-ink-900/15 bg-white px-3.5 py-3 text-base text-ink-900 focus:border-electric-500",
         className,
       )}
     />
@@ -117,7 +119,7 @@ export function Card({
   return (
     <div
       className={cx(
-        "rounded-2xl border border-ink-900/8 bg-card p-6 shadow-[var(--shadow-lift)] transition-shadow duration-200 hover:shadow-[0_2px_4px_rgb(10_14_26/0.05),0_12px_32px_-10px_rgb(10_14_26/0.16)]",
+        "rounded-2xl border border-ink-900/10 bg-card p-6 shadow-[0_2px_8px_rgb(10_14_26/0.025)]",
         className,
       )}
     >
@@ -166,9 +168,11 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-dashed border-ink-900/20 bg-paper px-8 py-14 text-center">
+    <div className="rounded-2xl border border-ink-900/10 bg-card px-6 py-16 text-center">
       <h3 className="text-lg font-semibold text-ink-900">{title}</h3>
-      <p className="mx-auto mt-2 max-w-md text-sm text-ink-600">{description}</p>
+      <p className="mx-auto mt-2 max-w-md text-sm text-ink-600">
+        {description}
+      </p>
       {action && <div className="mt-6 flex justify-center">{action}</div>}
     </div>
   );

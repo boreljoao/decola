@@ -5,7 +5,10 @@ import { requireWorkspace } from "@/server/auth";
 import { getDb } from "@/server/db";
 import { briefings, pages, projects } from "@/server/db/schema";
 
-const STATUS_LABEL: Record<string, { label: string; tone: "neutral" | "success" | "warning" | "danger" | "info" }> = {
+const STATUS_LABEL: Record<
+  string,
+  { label: string; tone: "neutral" | "success" | "warning" | "danger" | "info" }
+> = {
   draft: { label: "Rascunho", tone: "neutral" },
   ready: { label: "Pronta para publicar", tone: "info" },
   publishing: { label: "Publicando…", tone: "warning" },
@@ -44,12 +47,39 @@ export default async function AppHome() {
             Minhas páginas
           </h1>
           <p className="mt-1 text-sm text-ink-600">
-            Workspace {ctx.workspaceName} · plano Free
+            Crie, publique e acompanhe seus projetos em um só lugar.
           </p>
         </div>
-        <Link href="/app/criar">
-          <Button variant="commercial">Criar nova página</Button>
+        <Link href="/app/criar" className="action action-dark">
+          Criar nova página <span aria-hidden="true">+</span>
         </Link>
+      </div>
+
+      <div className="workspace-stat-grid">
+        <div className="workspace-stat">
+          <p>Seus projetos</p>
+          <strong>{projectRows.length}</strong>
+        </div>
+        <div className="workspace-stat">
+          <p>Páginas no ar</p>
+          <strong>
+            {pageRows.filter((page) => page.status === "live").length}
+          </strong>
+        </div>
+        <div className="workspace-stat">
+          <p>Em preparação</p>
+          <strong>
+            {
+              projectRows.filter(
+                (project) =>
+                  !pageByProject.has(project.id) ||
+                  ["draft", "ready", "publishing", "publish_failed"].includes(
+                    pageByProject.get(project.id)!.status,
+                  ),
+              ).length
+            }
+          </strong>
+        </div>
       </div>
 
       {projectRows.length === 0 ? (
@@ -57,8 +87,8 @@ export default async function AppHome() {
           title="Sua primeira página começa com boas perguntas"
           description="Responda o briefing rápido (cerca de 5 minutos) e veja a Decola compor uma página com a identidade do seu negócio."
           action={
-            <Link href="/app/criar">
-              <Button variant="commercial">Começar o briefing</Button>
+            <Link href="/app/criar" className="action action-dark">
+              Começar o briefing
             </Link>
           }
         />
@@ -85,7 +115,8 @@ export default async function AppHome() {
                 </div>
                 {page?.slug && page.status === "live" && (
                   <p className="truncate text-sm text-ink-600">
-                    {page.slug}.{process.env.PUBLISH_ROOT_DOMAIN ?? "localhost:3000"}
+                    {page.slug}.
+                    {process.env.PUBLISH_ROOT_DOMAIN ?? "localhost:3000"}
                   </p>
                 )}
                 <div className="mt-auto flex gap-2">
