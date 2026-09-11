@@ -1,20 +1,30 @@
-"use client";
-
-import { useLayoutEffect } from "react";
-
-let initialEntryHandled = false;
-
-/** Reload the landing page at its opening; preserve anchors and back navigation. */
+/** Run during HTML parsing, before the browser restores a reload's scroll offset. */
 export function HomeEntry() {
-  useLayoutEffect(() => {
-    if (initialEntryHandled) return;
-    initialEntryHandled = true;
-    const navigation = performance.getEntriesByType("navigation")[0] as
-      PerformanceNavigationTiming | undefined;
-    if (navigation?.type === "reload" && !window.location.hash) {
-      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-    }
-  }, []);
-
-  return null;
+  return (
+    <script
+      id="home-reload-position"
+      dangerouslySetInnerHTML={{
+        __html: `(() => {
+          if (window.__decolaHomeReloadHandled) return;
+          window.__decolaHomeReloadHandled = true;
+          const navigation = performance.getEntriesByType('navigation')[0];
+          if (navigation?.type !== 'reload' || location.hash) return;
+          const previous = history.scrollRestoration;
+          history.scrollRestoration = 'manual';
+          const reset = () => window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+          window.addEventListener('pageshow', () => {
+            reset();
+            requestAnimationFrame(() => {
+              reset();
+              history.scrollRestoration = previous;
+            });
+          }, { once: true });
+          window.addEventListener('pagehide', () => {
+            history.scrollRestoration = previous;
+          }, { once: true });
+          reset();
+        })();`,
+      }}
+    />
+  );
 }
