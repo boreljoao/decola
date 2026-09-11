@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Reveal } from "@/components/marketing/reveal";
 import { AmbientVideo } from "@/components/marketing/ambient-video";
+import { HomeEntry } from "@/components/marketing/home-entry";
 import { ProductPreview } from "@/components/marketing/product-preview";
 import { ExampleGallery, getExamples } from "@/components/marketing/examples";
 import { formatBRL, PLANS } from "@/config/commercial-policy";
@@ -22,6 +23,7 @@ export default function HomePage() {
     "Tratamentos faciais personalizados e protocolos de skincare para o dia a dia.";
   return (
     <main className="home-page">
+      <HomeEntry />
       <section className="home-hero">
         <AmbientVideo />
         <div className="hero-copy site-container">
