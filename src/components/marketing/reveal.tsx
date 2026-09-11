@@ -38,18 +38,18 @@ export function Reveal({
           element,
           {
             opacity: [0, 1],
-            transform: ["translateY(18px)", "translateY(0px)"],
+            transform: ["translateY(24px)", "translateY(0px)"],
           },
           {
-            duration: 0.65,
-            delay: Math.min(delay, 0.2),
+            duration: 0.95,
+            delay: Math.max(0, Math.min(delay, 0.18)),
             ease: [0.22, 1, 0.36, 1],
             onComplete: restore,
           },
         );
         observer.disconnect();
       },
-      { rootMargin: "0px 0px -24px 0px" },
+      { rootMargin: "0px 0px -48px 0px", threshold: 0.01 },
     );
     observer.observe(element);
     const reduce = () => {

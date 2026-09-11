@@ -174,9 +174,8 @@
   nunca existe página em branco.
 */
 .reveal {
-  transition:
-    opacity 0.6s cubic-bezier(0.21, 0.6, 0.35, 1),
-    transform 0.6s cubic-bezier(0.21, 0.6, 0.35, 1);
+  /* Framer Motion owns opacity and transform, without competing CSS easing. */
+  transition: none;
 }
 .reveal-hidden {
   opacity: 0;
