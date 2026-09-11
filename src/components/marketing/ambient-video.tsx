@@ -1,14 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Pause, Play } from "lucide-react";
 
 /** Decorative video loads after hydration; the poster is the default on slow connections. */
 export function AmbientVideo({ className = "" }: { className?: string }) {
   const video = useRef<HTMLVideoElement>(null);
   const wanted = useRef(true);
   const [playing, setPlaying] = useState(false);
-  const [failed, setFailed] = useState(false);
   useEffect(() => {
     const element = video.current;
     if (!element) return;
@@ -22,6 +20,7 @@ export function AmbientVideo({ className = "" }: { className?: string }) {
       !!connection?.saveData ||
       ["slow-2g", "2g"].includes(connection?.effectiveType ?? "");
     wanted.current = !reduced.matches && !saveData;
+    element.playbackRate = 0.8;
     let visible = true;
     const sync = () => {
       if (wanted.current && visible && !document.hidden) {
@@ -30,7 +29,7 @@ export function AmbientVideo({ className = "" }: { className?: string }) {
           element.load();
         }
         void element.play().catch(() => {
-          /* Keep the poster and manual play control. */
+          /* Autoplay may be blocked by the browser; keep the poster. */
         });
       } else element.pause();
     };
@@ -59,53 +58,27 @@ export function AmbientVideo({ className = "" }: { className?: string }) {
       element.pause();
     };
   }, []);
-  function toggle() {
-    const element = video.current;
-    if (!element) return;
-    wanted.current = element.paused;
-    if (!wanted.current) element.pause();
-    else {
-      if (!element.getAttribute("src")) {
-        element.src = "/media/decola-motion.mp4";
-        element.load();
-      }
-      void element.play().catch(() => setPlaying(false));
-    }
-  }
   return (
-    <>
-      <div className={`ambient-video ${className}`}>
-        <video
-          ref={video}
-          poster="/media/decola-motion-poster.jpg"
-          muted
-          loop
-          playsInline
-          preload="none"
-          aria-hidden="true"
-          tabIndex={-1}
-          onPlay={() => setPlaying(true)}
-          onPause={() => setPlaying(false)}
-          onError={() => {
-            setFailed(true);
-            setPlaying(false);
-          }}
-        />
-        <div className="video-wash" aria-hidden="true" />
-      </div>
-      {!failed && (
-        <button
-          className="video-control"
-          type="button"
-          onClick={toggle}
-          aria-label={
-            playing ? "Pausar vídeo de fundo" : "Reproduzir vídeo de fundo"
-          }
-        >
-          {playing ? <Pause size={14} /> : <Play size={14} />}
-          <span>{playing ? "Pausar movimento" : "Ativar movimento"}</span>
-        </button>
-      )}
-    </>
+    <div
+      className={`ambient-video ${playing ? "is-playing" : ""} ${className}`}
+    >
+      <video
+        ref={video}
+        poster="/media/decola-motion-poster.jpg"
+        muted
+        autoPlay
+        loop
+        playsInline
+        preload="none"
+        aria-hidden="true"
+        tabIndex={-1}
+        onPlaying={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onError={() => {
+          setPlaying(false);
+        }}
+      />
+      <div className="video-wash" aria-hidden="true" />
+    </div>
   );
 }
