@@ -90,22 +90,27 @@ summary {
   isolation: isolate;
   padding: 11px 12px;
   border-radius: 100px;
-  transition: color 0.35s ease;
+  transition: color 0.8s ease;
 }
 .desktop-nav a::before,
 .login-link::before {
   content: "";
   position: absolute;
-  inset: 0;
+  left: 19%;
+  right: 19%;
+  bottom: 3px;
+  height: 5px;
   z-index: -1;
-  border: 1px solid rgb(37 42 49 / 0.09);
-  border-radius: inherit;
-  background: rgb(37 42 49 / 0.025);
+  pointer-events: none;
+  border-radius: 50%;
+  background: rgb(37 42 49 / 0.14);
+  filter: blur(6px);
+  box-shadow: 0 3px 8px rgb(37 42 49 / 0.07);
   opacity: 0;
-  transform: scale(0.96);
+  transform: translateY(2px) scaleX(0.75);
   transition:
-    opacity 0.4s ease,
-    transform 0.5s var(--site-ease);
+    opacity 0.95s ease,
+    transform 1.1s ease;
 }
 .desktop-nav a:hover::before,
 .desktop-nav a:focus-visible::before,
@@ -113,7 +118,7 @@ summary {
 .login-link:hover::before,
 .login-link:focus-visible::before {
   opacity: 1;
-  transform: scale(1);
+  transform: translateY(0) scaleX(1);
 }
 .desktop-nav a:hover,
 .desktop-nav a[aria-current],

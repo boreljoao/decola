@@ -2,40 +2,30 @@
 
 import { useEffect, useRef, useState } from "react";
 
-/** Decorative video loads after hydration; the poster is the default on slow connections. */
+/** Load the muted video immediately; retry playback when media or interaction permits it. */
 export function AmbientVideo({ className = "" }: { className?: string }) {
   const video = useRef<HTMLVideoElement>(null);
-  const wanted = useRef(true);
   const [playing, setPlaying] = useState(false);
   useEffect(() => {
     const element = video.current;
     if (!element) return;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const connection = (
-      navigator as Navigator & {
-        connection?: { saveData?: boolean; effectiveType?: string };
-      }
-    ).connection;
-    const saveData =
-      !!connection?.saveData ||
-      ["slow-2g", "2g"].includes(connection?.effectiveType ?? "");
-    wanted.current = !reduced.matches && !saveData;
+    // Set the DOM properties as well as JSX attributes before attempting autoplay.
+    element.defaultMuted = true;
+    element.muted = true;
+    element.playsInline = true;
     element.playbackRate = 0.8;
     let visible = true;
     const sync = () => {
-      if (wanted.current && visible && !document.hidden) {
-        if (!element.getAttribute("src")) {
-          element.src = "/media/decola-motion.mp4";
-          element.load();
+      if (!reduced.matches && visible && !document.hidden) {
+        if (!element.paused) {
+          setPlaying(true);
+          return;
         }
         void element.play().catch(() => {
-          /* Autoplay may be blocked by the browser; keep the poster. */
+          /* canplay or the next natural interaction retries a blocked start. */
         });
       } else element.pause();
-    };
-    const preferenceChanged = () => {
-      wanted.current = !reduced.matches && !saveData;
-      sync();
     };
     const observer =
       typeof IntersectionObserver !== "undefined"
@@ -49,12 +39,18 @@ export function AmbientVideo({ className = "" }: { className?: string }) {
         : null;
     observer?.observe(element);
     document.addEventListener("visibilitychange", sync);
-    reduced.addEventListener("change", preferenceChanged);
+    element.addEventListener("canplay", sync);
+    document.addEventListener("pointerdown", sync, { passive: true });
+    document.addEventListener("keydown", sync);
+    reduced.addEventListener("change", sync);
     sync();
     return () => {
       observer?.disconnect();
       document.removeEventListener("visibilitychange", sync);
-      reduced.removeEventListener("change", preferenceChanged);
+      element.removeEventListener("canplay", sync);
+      document.removeEventListener("pointerdown", sync);
+      document.removeEventListener("keydown", sync);
+      reduced.removeEventListener("change", sync);
       element.pause();
     };
   }, []);
@@ -64,12 +60,13 @@ export function AmbientVideo({ className = "" }: { className?: string }) {
     >
       <video
         ref={video}
+        src="/media/decola-motion.mp4"
         poster="/media/decola-motion-poster.jpg"
         muted
         autoPlay
         loop
         playsInline
-        preload="none"
+        preload="auto"
         aria-hidden="true"
         tabIndex={-1}
         onPlaying={() => setPlaying(true)}
