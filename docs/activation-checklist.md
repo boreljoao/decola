@@ -2,21 +2,21 @@
 
 Formato (spec §20): integração → variáveis → configuração externa → webhook/callback → teste executado → estado → bloqueio.
 
-Estado em 2026-09-09. Cada capability é calculada por **configuração válida + adapter implementado + direitos do usuário** — nada aparece disponível na interface sem os três.
+Estado em 2026-09-14. Cada capability é calculada por **configuração válida + adapter implementado + direitos do usuário** — nada aparece disponível na interface sem os três.
 
 | Integração | Variáveis | Configuração externa | Webhook/callback | Teste executado | Estado | Bloqueio |
 |---|---|---|---|---|---|---|
-| Banco (Supabase Postgres) | `DATABASE_URL` | Criar projeto Supabase; usar a connection string do pooler | — | Migrations aplicadas em PGlite (mesmo dialeto) e schema exercitado por 78 testes | implementada, aguardando configuração | Sem projeto Supabase |
-| Supabase Auth | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Habilitar e-mail/senha; redirect `<APP_URL>/auth/callback`; templates pt-BR; **MFA para admin** | Callback OAuth (ao ativar Google) | Adapter compila e mapeia erros; sem projeto para teste real | implementada, aguardando configuração | Sem projeto Supabase |
-| Supabase Storage | `SUPABASE_SERVICE_ROLE_KEY` | Criar bucket **privado** `decola-assets` | — | Adapter local testado E2E (upload, validação, servir com autorização) | implementada, aguardando configuração | Sem projeto Supabase |
+| Banco (Supabase Postgres) | `DATABASE_URL` ou `POSTGRES_URL` (integração da Vercel) | Conectar o Supabase pela aba Storage da Vercel | — | 12 migrations aplicadas por `scripts/migrate-on-deploy.mjs` contra Postgres de protocolo real (idempotência, fallback direta → pooler, falha sem vazar senha); RLS em 46/46 tabelas; 149 testes | implementada, aguardando configuração | Supabase não conectado |
+| Supabase Auth | `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` ou a chave publishable | Site URL e Redirect URLs `<APP_URL>/**`; **Confirm email** desligado até haver SMTP próprio; MFA para admin | `GET /auth/callback` (PKCE e `token_hash`) | Cadastro com e sem confirmação, callback, recuperação e redefinição cobertos por testes com cliente simulado; rotas verificadas no navegador; sessão renovada no proxy | implementada, aguardando configuração | Sem projeto Supabase para teste real |
+| Supabase Storage | `SUPABASE_SERVICE_ROLE_KEY` ou `SUPABASE_SECRET_KEY` | Nenhuma: o bucket privado `decola-assets` é criado no primeiro upload | — | Adapter local testado E2E; limite de 4 MB no navegador e no servidor; criação do bucket não exercitada contra Supabase real | implementada, aguardando configuração | Sem projeto Supabase |
 | Geração por IA (Anthropic) | `ANTHROPIC_API_KEY`, `GENERATION_MODEL` | Chave em console.anthropic.com | — | Saída validada pelo mesmo Zod do renderer; reparo único; sem chamada real | implementada, aguardando configuração | Sem chave |
 | Edição por IA | idem acima | idem | — | Proteção de campos comerciais coberta por código; reserva/commit de crédito testados | implementada, aguardando configuração | Sem chave |
 | E-mail (Resend) | `RESEND_API_KEY`, `EMAIL_FROM` | Verificar domínio remetente | Bounce/complaint (a implementar) | Transporte de dev testado E2E (lead, convite, candidatura) | implementada, aguardando configuração | Sem domínio verificado |
 | Stripe (cartão/assinatura) | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Conta Stripe; webhook para `/api/webhooks/stripe` | `POST /api/webhooks/stripe` | 8 testes de evento normalizado (replay, fora de ordem, reembolso); **sem transação sandbox** | implementada, aguardando configuração | Sem conta |
 | Mercado Pago (Pix) | `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRET` | Credenciais de produção; webhook para `/api/webhooks/mercadopago` | `POST /api/webhooks/mercadopago` | Assinatura HMAC implementada conforme manifesto do MP; **sem transação sandbox** | implementada, aguardando configuração | Sem conta |
-| Publicação em subdomínio | `PUBLISH_ROOT_DOMAIN`, `APP_URL` | Domínio + **wildcard DNS** `*.dominio` + certificado wildcard | — | Roteamento testado E2E em `*.localhost` | implementada, aguardando configuração | Domínio de produção não registrado |
-| Domínio próprio do cliente | idem acima | Adicionar cada domínio ao projeto na plataforma de deploy (emite SSL) | — | Normalização coberta por 7 testes; verificação DNS real por TXT; para em `ssl_pending` sem plataforma | implementada, aguardando configuração | Sem plataforma de deploy configurada |
-| Fila (drain em produção) | `JOB_DRAIN_TOKEN` | Cron chamando `POST /api/jobs/drain` com `Authorization: Bearer <token>` | — | Drain testado E2E (geração, criativos, e-mails) | implementada, aguardando configuração | Sem ambiente de produção |
+| Publicação | `PUBLISH_ROOT_DOMAIN` (opcional) | Sem domínio: nenhuma, páginas em `<APP_URL>/p/<slug>`. Com domínio: wildcard DNS `*.dominio` + certificado | — | Modo por caminho verificado E2E (publicar, visitar, medir, lead deduplicado); subdomínio verificado E2E em `*.localhost` | **funcional por caminho**; subdomínio aguardando domínio | Domínio não registrado (só para subdomínio) |
+| Domínio próprio do cliente | `PUBLISH_ROOT_DOMAIN`, `APP_URL` | Adicionar cada domínio ao projeto na plataforma de deploy (emite SSL) | — | Normalização coberta por 7 testes; verificação DNS real por TXT; indisponível com o motivo enquanto a publicação é por caminho | implementada, aguardando configuração | Exige domínio de publicação |
+| Fila (drain em produção) | `JOB_DRAIN_TOKEN` + `CRON_SECRET` (mesmo valor) | Nenhuma para o fluxo normal (`after()` na própria requisição); o cron diário do `vercel.json` pega retentativas | — | Drain testado E2E (geração, criativos, e-mails); cron chama por GET | implementada; cron aguardando o token | — |
 | Meta Pixel | — (ID por workspace na UI) | Nenhuma no servidor | — | Validação de formato + carregamento só após consentimento | **implementada e funcional** | — |
 | Google Analytics 4 | — (ID por workspace na UI) | Nenhuma no servidor | — | idem | **implementada e funcional** | — |
 | RD Station | — | OAuth do provedor | — | — | não implementada | Exige OAuth; declarado na UI com o motivo |
@@ -28,14 +28,15 @@ Estado em 2026-09-09. Cada capability é calculada por **configuração válida 
 
 ## Passo a passo mínimo para produção
 
-1. **Supabase**: criar projeto → `DATABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`; criar bucket privado `decola-assets`; habilitar MFA para contas admin.
-2. **Segredos**: `SESSION_SECRET` e `JOB_DRAIN_TOKEN` (`openssl rand -hex 32`).
-3. **Migrations**: `DATABASE_URL=... npx drizzle-kit migrate`.
-4. **Domínio**: registrar; configurar wildcard `*.dominio` e certificado; definir `APP_URL` e `PUBLISH_ROOT_DOMAIN`.
-5. **Cron**: agendar `POST /api/jobs/drain` a cada minuto com o token.
-6. **Opcional por capability**: `ANTHROPIC_API_KEY` (geração e edição por IA), `OPENAI_API_KEY` (transcrição do áudio do briefing), `RESEND_API_KEY` + `EMAIL_FROM` (e-mails reais), Stripe e Mercado Pago (vendas).
+Detalhado, com o porquê de cada item, em [deploy.md](deploy.md):
 
-Sem os itens 1–2, o boot de produção **falha de propósito** (`src/config/env.ts`) — nunca há fallback silencioso para modo de desenvolvimento.
+1. **Conectar o Supabase** pela aba Storage da Vercel (só Production). As variáveis entram sozinhas; o app aceita os nomes da integração.
+2. **No Supabase**: Site URL e Redirect URLs do domínio do app; desligar *Confirm email* até configurar SMTP próprio.
+3. **Redeploy**: as migrations rodam no build.
+4. **Admin**: marcar `platform_admin` na própria conta pelo SQL Editor.
+5. **Opcional por capability**: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `RESEND_API_KEY` + `EMAIL_FROM`, Stripe, Mercado Pago, `JOB_DRAIN_TOKEN` + `CRON_SECRET`, `PUBLISH_ROOT_DOMAIN`.
+
+Sem banco e Supabase Auth, o boot de produção **falha de propósito** (`src/config/env.ts`) — nunca há fallback silencioso para modo de desenvolvimento.
 
 ## Antes de vender de verdade
 

@@ -64,3 +64,34 @@
 ## D-013 · Escopo faseado desta implementação
 **Decisão:** Ordem de entrega segue as fases A–G da spec §21. Prioridade absoluta: fatia vertical funcional (briefing → geração → preview → publicação Free → lead) antes de multiplicar telas. Marketplace, API Business, white-label e Voo Contínuo completo entram após o núcleo verificado, conforme seus próprios gates.
 **Status:** em execução.
+
+## D-014 · Publicação por caminho enquanto não há domínio com wildcard
+**Contexto:** A spec publica o plano Free em subdomínio (`{slug}.<domínio>`), o que exige DNS wildcard. A produção roda em `decola-ruby.vercel.app`, sem domínio próprio: o endereço gerado não resolvia, e o ciclo publicar → visitar → lead não fechava.
+**Decisão:** `env().publishing` decide o formato. `subdomain` quando `PUBLISH_ROOT_DOMAIN` foi configurado (ou fora de produção, onde `*.localhost` resolve sozinho); `path` nos demais casos, servindo em `<APP_URL>/p/<slug>`. Um único módulo (`features/pages/public-url.ts`) monta o endereço — antes eram seis. No modo por caminho a página divide origem com o painel, então pixel e analytics de terceiros não carregam, e domínio próprio fica indisponível com o motivo real (as instruções de DNS apontariam para `localhost`). Com subdomínio configurado, `/p/<slug>` redireciona para ele.
+**Status:** aplicada.
+
+## D-015 · Migrations como etapa do deploy de produção
+**Contexto:** Nada aplicava migrations em produção; o passo manual dependia de alguém ter a connection string na própria máquina.
+**Decisão:** `vercel.json` usa `npm run vercel-build`, que roda `scripts/migrate-on-deploy.mjs` antes do `next build`. Só com `VERCEL_ENV=production` (preview de PR usaria o mesmo banco); sem banco, pula; prefere a conexão direta e cai para o pooler se ela não conectar; falha de migration derruba o build, e a Vercel mantém o deploy anterior no ar. Nunca imprime a connection string.
+**Status:** aplicada.
+
+## D-016 · Nomes da integração Supabase da Vercel e fim da exigência de `SESSION_SECRET`
+**Contexto:** A integração Supabase da Vercel Marketplace injeta `POSTGRES_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` e outros — nenhum dos nomes que o app lia. Conectar a integração não ativaria nada. `SESSION_SECRET` era exigido no boot sem ser lido por fluxo algum.
+**Decisão:** `config/env-source.ts` resolve aliases (o nome canônico vence) e deriva `APP_URL` de `VERCEL_PROJECT_PRODUCTION_URL`. O módulo não importa `server-only` nem lança, porque o proxy o usa em toda requisição. `SESSION_SECRET` continua aceito, mas deixou de ser obrigatório: produção exige apenas banco e Supabase Auth.
+**Status:** aplicada.
+
+## D-017 · Fluxo de autenticação completo e sessão renovada no proxy
+**Contexto:** O adapter Supabase existia, mas faltavam as rotas que a spec lista (`/auth/callback`, `/verificar-email`, `/recuperar-senha`, `/redefinir-senha`): o link de confirmação caía em 404; cadastro com confirmação ligada mandava para `/app` sem sessão; e a renovação de sessão acontecia em Server Components, onde cookie não pode ser gravado — o refresh token, de uso único, seria revogado depois da primeira hora.
+**Decisão:** Rotas e ações completas. Cadastro sem sessão vai para `/verificar-email`, com o e-mail pendente em cookie httpOnly (não na URL). Recuperação não revela se o e-mail tem conta. Erros traduzidos por código estável. Cookies de sessão forçados a httpOnly e SameSite=Lax — nenhum cliente Supabase roda no navegador. `proxy.ts` renova a sessão com `getClaims()`. D-004 continua valendo: a Decola não armazena hash de senha.
+**Status:** aplicada e coberta por testes com cliente simulado; verificação contra projeto Supabase real pendente.
+
+## D-018 · Limite de upload de 4 MB
+**Contexto:** A Vercel recusa corpo de requisição acima de 4,5 MB com `413 FUNCTION_PAYLOAD_TOO_LARGE` antes de o código rodar. Imagem de 5 MB (default da spec) e áudio de 10 MB nunca chegariam ao servidor, e a pessoa veria um erro genérico.
+**Decisão:** 4 MB para imagem e áudio, num módulo compartilhado entre navegador e servidor, com checagem antes de enviar e tratamento explícito do 413. O Supabase Storage cria o bucket privado no primeiro upload, em vez de exigir um passo manual.
+**Status:** aplicada.
+
+## D-019 · RLS ligado em todas as tabelas
+**Contexto:** No Supabase, o schema `public` é exposto pela Data API. A documentação do Supabase (conferida em 2026-09-14): *"A table in an exposed schema without RLS is readable and writable by any role with a grant on it"*, e tabelas novas concedem todos os privilégios a `anon` e `authenticated`. As 46 tabelas da Decola — perfis, leads, pagamentos, auditoria — ficariam acessíveis a quem tivesse a chave pública, que o próprio Supabase chama de *publishable*. O app nunca envia essa chave ao navegador, mas segurança não pode depender do sigilo de uma chave feita para ser pública.
+**Decisão:** `.enableRLS()` em todas as tabelas do schema Drizzle, que é a fonte de verdade, e migration gerada a partir dele — sem nenhuma policy. Pela Data API, nada é lido nem gravado. O app conecta ao Postgres como dono das tabelas, que não é afetado pelo RLS; a autorização continua no servidor, por workspace (spec §4). Como nenhum cliente Supabase roda no navegador, não existe consulta direta que precise de policy.
+**Status:** aplicada.
+

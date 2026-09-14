@@ -8,7 +8,8 @@ Estados (spec §0): `verificado` (testado de ponta a ponta localmente), `impleme
 
 | Requisito (spec) | Implementação | Status |
 |---|---|---|
-| Cadastro/entrar/sair com sessão server-side (§7.1) | `src/server/auth/*` — cookie httpOnly, token por hash | verificado (DevAuth); Supabase Auth: bloqueado_por_configuracao |
+| Cadastro/entrar/sair com sessão server-side (§7.1) | `src/server/auth/*` — cookie httpOnly; Supabase com sessão renovada no proxy | verificado (DevAuth, navegador); Supabase Auth: implementado e testado com cliente simulado, verificação real bloqueada_por_configuracao |
+| Verificar e-mail, recuperar e redefinir senha, callback (rotas de Auth) | `/verificar-email`, `/recuperar-senha`, `/redefinir-senha`, `/auth/callback` | rotas e redirecionamentos verificados no navegador; fluxo Supabase testado com cliente simulado |
 | Workspace, papéis e autorização por recurso (§4) | `requireWorkspace`/`assertRole` em toda ação | verificado |
 | Briefing: 8 módulos, condicionais, origem da resposta (§7.2) | `features/briefing/questions.ts` | verificado (modo rápido E2E); modo completo: implementado_sem_verificacao_externa |
 | Autosave com debounce, indicador e retomada (§7.1) | `saveBriefingAnswers` + wizard | verificado |
@@ -39,6 +40,7 @@ Estados (spec §0): `verificado` (testado de ponta a ponta localmente), `impleme
 | Requisito | Implementação | Status |
 |---|---|---|
 | Deploy por versão imutável, swap atômico (§11.1) | `publication_deployments` | verificado |
+| Publicação sem domínio (D-014) | `/p/[slug]`, `features/pages/public-url.ts` | verificado E2E: publicar → visitar → visitas medidas → lead deduplicado; pixels de terceiros desligados na mesma origem |
 | Host-based routing `{slug}.<root>` (D-007) | `src/proxy.ts` + `/sites/[slug]` | verificado (dev); produção exige wildcard: bloqueado_por_configuracao |
 | Free: 1 página com marca Decola (§1.2) | `entitlements.ts` + badge | verificado |
 | Domínio próprio com DNS/SSL (§11.2) | `features/domains/` — verificação real por TXT, estados da spec, host único global | verificado (normalização e recusa de sequestro: 7 testes; roteamento E2E); emissão SSL: bloqueado_por_configuracao |
@@ -47,6 +49,8 @@ Estados (spec §0): `verificado` (testado de ponta a ponta localmente), `impleme
 | Analytics first-party sem cookies (§13.1) | `/api/public/events` | verificado |
 | Upload de imagem: MIME real, EXIF, SVG recusado (§16) | `validate-image.ts` | verificado (9 testes + burla no navegador) |
 | Asset privado antes, público após publicar (§16) | `/api/assets/[id]` | verificado (403 → 200) |
+| RLS em todas as tabelas (D-019) | `drizzle/0011_enable_rls.sql` | verificado: 46/46 tabelas com RLS depois das migrations |
+| Migrations no deploy (D-015) | `scripts/migrate-on-deploy.mjs` | verificado contra Postgres de protocolo real: idempotência, fallback direta → pooler, falha sem vazar senha |
 
 ## Receita
 

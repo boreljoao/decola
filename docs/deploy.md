@@ -1,223 +1,245 @@
-# Decola — subir para o GitHub e colocar no ar
+# Decola — colocar no ar
 
-Guia operacional. O que está aqui foi verificado no código; o que depende de
-conta externa está marcado como **você faz** — não invento credencial, domínio,
-projeto Supabase nem resultado de teste que não rodou.
+Guia operacional. O que está aqui foi verificado no código ou na documentação
+do provedor, com a data; o que depende de conta externa está marcado como
+**você faz** — não invento credencial, domínio, projeto nem resultado de teste
+que não rodou.
 
-**Estado em 2026-09-10:** código no GitHub em
-[boreljoao/decola](https://github.com/boreljoao/decola) (**público** — veja o
-aviso abaixo). Projeto na Vercel criado e com deploy verde em
-`https://decola-ruby.vercel.app`. Projeto Supabase: **não criado** — por isso
-tudo que precisa de banco ainda responde erro. Domínio: não registrado.
+**Estado em 2026-09-14**
 
-### Estado verificado do deploy (2026-09-10)
+| Parte | Estado |
+|---|---|
+| Código | GitHub em [boreljoao/decola](https://github.com/boreljoao/decola) — **público** (veja o aviso no fim) |
+| Deploy | Verde em `https://decola-ruby.vercel.app`, com o site de marketing respondendo |
+| Banco, login e storage | Prontos no código; **aguardando o Supabase ser conectado** (passo 1) |
+| Domínio | Não registrado — páginas publicadas usam o endereço provisório `/p/<slug>` |
 
-Varredura das rotas públicas em `https://decola-ruby.vercel.app`, sem nenhuma
-variável configurada:
+### Verificado localmente em 2026-09-14
 
-| Rotas | Status | Motivo |
+Servidor de desenvolvimento com publicação por caminho (`PUBLISH_MODE=path`) e
+login de desenvolvimento:
+
+- Cadastro → briefing rápido (15 perguntas, incluindo a condicional do
+  WhatsApp) → geração → publicação em `localhost:3000/p/<slug>`.
+- A página publicada renderiza com canonical no próprio caminho e **nenhum
+  script da Meta ou do Google**.
+- Visitas medidas pela API pública na mesma origem. Lead enviado da própria
+  página chega **uma vez** no painel — o reenvio com a mesma chave é
+  deduplicado.
+- `/p/<slug>` inexistente responde 404. `/auth/callback` sem parâmetros, com
+  link expirado ou com `next` externo cai em `/entrar` com aviso.
+- `scripts/migrate-on-deploy.mjs` contra um Postgres de protocolo real (PGlite
+  via socket): 12 migrations aplicadas, segunda execução idempotente, conexão
+  direta recusada caindo para o pooler, falha sem vazar senha, RLS em 46 de 46
+  tabelas. Esse teste pegou um bug — a conexão recusada não caía para o pooler —,
+  corrigido antes do commit.
+- 149 testes, typecheck e lint limpos; `npm run vercel-build` conclui sem banco.
+
+**Não verificado:** nada contra um projeto Supabase real — Auth, Storage e a
+leitura das variáveis da integração. O adapter de Auth está coberto por testes
+com cliente simulado, que provam as decisões do código, não as respostas do
+Supabase. Isso só é possível depois do passo 1, e é o primeiro item da
+conferência no fim deste guia.
+
+---
+
+## Quatro passos para o produto funcionar
+
+### 1. Conectar o Supabase pela Vercel — **você faz**
+
+1. Vercel → projeto **decola** → aba **Storage** → **Create Database** →
+   **Supabase**.
+2. Região: **South America (São Paulo)**. O `vercel.json` fixa as funções em
+   `gru1`, então app e banco ficam na mesma cidade.
+3. Ao conectar ao projeto, deixe marcado **só Production**. Preview são as
+   branches de PR: com o banco conectado nelas, cada PR gravaria dados de teste
+   no banco de produção.
+
+A integração cria as variáveis sozinha — `POSTGRES_URL`,
+`POSTGRES_URL_NON_POOLING`, `NEXT_PUBLIC_SUPABASE_URL`,
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` e outras. O app
+aceita esses nomes (decisão D-016). **Você não copia nenhuma chave.**
+
+### 2. Ajustar a autenticação no Supabase — **você faz**
+
+No painel do Supabase (a Vercel tem o botão *Open in Supabase*), em
+**Authentication**:
+
+**a. URL Configuration**
+
+- *Site URL*: `https://decola-ruby.vercel.app`
+- *Redirect URLs*: `https://decola-ruby.vercel.app/**`
+
+Sem isso, os links de confirmação e de recuperação voltam para o endereço
+padrão do Supabase, que não é o seu site.
+
+**b. Confirmação de e-mail: desligue por enquanto**
+
+Nas configurações do provedor **Email**, desligue **Confirm email**.
+
+Por quê: sem SMTP próprio, o Supabase só entrega e-mail para quem é membro do
+time do projeto, no máximo **2 por hora**, e a própria documentação diz que
+isso não serve para produção (conferido em 2026-09-14). Com a confirmação
+ligada, ninguém de fora do seu time conseguiria terminar o cadastro.
+
+O custo, para você decidir com clareza:
+
+- a conta é criada sem provar que o e-mail pertence à pessoa;
+- "Esqueci minha senha" continua só entregando para membros do time.
+
+Para lançar de verdade, configure um SMTP próprio em **Authentication → Emails
+→ SMTP Settings** (o Resend, por exemplo, funciona como SMTP do Supabase) e
+volte a ligar a confirmação. O app já trata os dois modos: com confirmação
+ligada, o cadastro leva para `/verificar-email`, com botão de reenvio.
+
+### 3. Redeploy — **você faz** (ou me peça)
+
+Variável nova só vale em deploy novo: Vercel → **Deployments** → último deploy
+→ **⋯** → **Redeploy**.
+
+No build, `scripts/migrate-on-deploy.mjs` aplica as migrations antes do
+`next build` (decisão D-015). No log do build, procure:
+
+```
+[decola:migrate] migrations aplicadas via conexão direta.
+```
+
+(ou `via pooler`). Se a migration falhar, o build falha **e o deploy anterior
+continua no ar** — nunca sobe código esperando um schema que não existe.
+
+### 4. Tornar sua conta admin — **você faz**, depois de se cadastrar
+
+Admin da plataforma aprova profissionais do marketplace e acessa `/admin`. Não
+existe botão para virar admin, de propósito: decide quem tem acesso ao banco.
+Crie sua conta no site e, no Supabase → **SQL Editor**, rode:
+
+```sql
+update profiles set platform_admin = true where email = 'seu-email@exemplo.com';
+```
+
+---
+
+## O que funciona sem mais nenhuma chave
+
+| Parte | Como |
+|---|---|
+| Cadastro, login, sair, recuperação de senha | Supabase Auth; sessão renovada no proxy (D-017) |
+| Banco | Migrations aplicadas no deploy (D-015); RLS ligado em todas as tabelas (D-019) |
+| Upload de logo, fotos e áudio | Supabase Storage; bucket privado criado no primeiro upload |
+| Geração da página | Motor determinístico identificado na interface |
+| Publicação | `https://decola-ruby.vercel.app/p/<slug>` (D-014) |
+| Leads, métricas, Voo Contínuo, criativos | Banco + fila (`after()` na própria requisição) |
+
+## Opcionais, por capability
+
+Cada uma liga uma parte; sem ela, a interface diz o que está indisponível e por
+quê, em vez de fingir que funciona.
+
+| Variável | Onde obter | Sem ela |
 |---|---|---|
-| `/`, `/precos`, `/como-funciona`, `/exemplos`, `/contato`, `/termos`, `/privacidade`, `/cookies` | **200** | estáticas, prerenderizadas no build |
-| `/entrar`, `/cadastro`, `/app`, `/profissionais`, `/pro` | **500** | exigem banco e sessão — o guard de produção derruba de propósito |
-
-Ou seja: o site de marketing está no ar e o produto não. Os 500 somem quando as
-cinco variáveis obrigatórias do passo 4 estiverem configuradas — não são bug.
-
-### Por que a URL do deploy às vezes pede login
-
-A proteção da Vercel está ligada como `all_except_custom_domains`: todos os
-endereços `*.vercel.app` exigem login na Vercel, **menos** o domínio de
-produção. Então `decola-ruby.vercel.app` é público e
-`decola-<time>.vercel.app` redireciona para o SSO. Para mostrar o preview a
-outra pessoa antes de ter domínio, use o primeiro — ou desligue a proteção em
-*Settings → Deployment Protection*.
-
----
-
-## 1. O que vai (e o que não vai) para o Git
-
-Vão os 220+ arquivos de código, as 11 migrations em `drizzle/`, a documentação e
-`.env.example`.
-
-**Não vai `.data/`** — e isso é proposital. Essa pasta tem ~60 MB e contém o
-Postgres embarcado (PGlite) do desenvolvimento, os uploads, os áudios e a caixa
-de saída de e-mails locais. Colocar isso no repositório publicaria dados de
-teste e arquivos binários que mudam a cada execução.
-
-O banco viaja como **schema**, não como arquivo: `drizzle/0000_*.sql` até
-`drizzle/0010_*.sql` recriam as ~40 tabelas em qualquer Postgres. Quem clonar o
-repositório roda `npm run dev` e ganha um banco novo, vazio, já migrado.
-
-Se você quiser levar os dados de desenvolvimento para outra máquina, copie a
-pasta `.data/` por fora do Git (pen drive, zip, drive) — ela é auto-contida.
-
----
-
-## 2. Banco de produção (Supabase) — **você faz**
-
-1. Crie um projeto em [supabase.com](https://supabase.com) (o plano gratuito
-   atende para começar). Região: **South America (São Paulo)** — o `vercel.json`
-   já fixa as funções em `gru1`, então os dois ficam no mesmo continente.
-2. Anote, em *Project Settings → Database*, a **connection string do pooler**
-   (a que tem `pooler` no host e porta `6543`). Serverless abre e fecha conexão
-   a cada requisição; sem pooler o Postgres esgota o limite de conexões.
-3. Em *Project Settings → API*, anote `Project URL`, `anon key` e
-   `service_role key`. **A service_role é segredo de backend** — ela nunca pode
-   ir para variável com prefixo `NEXT_PUBLIC_`.
-4. Em *Storage*, crie um bucket **privado** chamado `decola-assets`.
-5. Em *Authentication*, habilite e-mail/senha e cadastre o redirect
-   `https://<seu-dominio>/auth/callback`.
-
-### Aplicar as migrations
-
-Crie um arquivo `.env.local` na raiz do projeto com a connection string:
-
-```
-DATABASE_URL=postgres://usuario:senha@host:6543/postgres
-```
-
-O `.gitignore` já exclui `.env.local`. Colocar a senha no arquivo em vez de
-passá-la na linha de comando evita que ela fique no histórico do shell.
-
-Depois:
-
-```bash
-npm run db:migrate
-```
-
-Isso aplica as 11 migrations e cria as ~40 tabelas. É idempotente — rodar de
-novo não duplica nada. Sem `DATABASE_URL` o comando para com uma mensagem
-dizendo exatamente o que falta.
-
-O mesmo `.env.local` faz o `npm run dev` local apontar para o Supabase em vez do
-PGlite embarcado — útil para conferir o banco de produção, arriscado para
-experimentar. Apague o arquivo para voltar ao banco local.
-
----
-
-## 3. Segredos próprios
-
-Duas variáveis não vêm de serviço nenhum, você gera:
+| `ANTHROPIC_API_KEY` | console.anthropic.com | geração usa o motor determinístico |
+| `OPENAI_API_KEY` | platform.openai.com | áudio grava e toca, mas não transcreve |
+| `RESEND_API_KEY` + `EMAIL_FROM` | resend.com (domínio remetente verificado) | e-mails do app (lead, convite) não saem; convite mostra o link para copiar |
+| `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` | Stripe | cartão indisponível |
+| `MERCADOPAGO_ACCESS_TOKEN` + `MERCADOPAGO_WEBHOOK_SECRET` | Mercado Pago | Pix indisponível |
+| `JOB_DRAIN_TOKEN` + `CRON_SECRET` (mesmo valor) | gere com o comando abaixo | cron diário de retentativa responde 401 |
+| `PUBLISH_ROOT_DOMAIN` | seu domínio, com DNS wildcard | páginas ficam no endereço provisório |
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-Rode duas vezes: um valor para `SESSION_SECRET`, outro para `JOB_DRAIN_TOKEN`.
+`SESSION_SECRET` **não é mais necessário**: nenhum fluxo lia esse valor
+(decisão D-016).
 
 ---
 
-## 4. Variáveis na Vercel
+## Limites que valem saber
 
-Em *Project → Settings → Environment Variables*, ambiente **Production**:
-
-| Variável | Valor | Sem ela |
-|---|---|---|
-| `DATABASE_URL` | pooler do Supabase | **boot falha de propósito** |
-| `SESSION_SECRET` | hex de 32 bytes | **boot falha de propósito** |
-| `NEXT_PUBLIC_SUPABASE_URL` | Project URL | **boot falha de propósito** |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon key | **boot falha de propósito** |
-| `SUPABASE_SERVICE_ROLE_KEY` | service_role | uploads não persistem no Storage |
-| `APP_URL` | URL real do deploy | roteamento de domínio próprio desligado; links de e-mail e callbacks quebram |
-| `PUBLISH_ROOT_DOMAIN` | `<seu-dominio>` | páginas publicadas sem endereço |
-| `JOB_DRAIN_TOKEN` | hex de 32 bytes | cron de retentativa não autentica |
-| `CRON_SECRET` | **mesmo valor** de `JOB_DRAIN_TOKEN` | idem |
-| `ANTHROPIC_API_KEY` | console.anthropic.com | geração cai no motor determinístico (funciona, e a UI diz isso) |
-| `OPENAI_API_KEY` | platform.openai.com | áudio grava e toca, mas não transcreve |
-| `RESEND_API_KEY` + `EMAIL_FROM` | resend.com | e-mails não saem |
-| `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` | Stripe | cartão indisponível |
-| `MERCADOPAGO_ACCESS_TOKEN` + `MERCADOPAGO_WEBHOOK_SECRET` | Mercado Pago | Pix indisponível |
-
-As cinco primeiras são obrigatórias: `src/config/env.ts` derruba o boot de
-produção sem elas, sem fallback silencioso para modo de desenvolvimento. As
-demais controlam *capabilities* — a interface declara o que está indisponível e
-por quê, em vez de fingir que funciona.
-
-`CRON_SECRET` duplica `JOB_DRAIN_TOKEN` porque a Vercel injeta o header
-`Authorization: Bearer $CRON_SECRET` nos crons, e a rota valida contra
-`JOB_DRAIN_TOKEN`.
+- **Upload de até 4 MB** para imagem e áudio. A Vercel recusa requisição acima
+  de 4,5 MB antes de o código rodar (D-018).
+- **Endereço provisório `/p/<slug>`**: a página divide origem com o painel,
+  então Pixel da Meta e Google Analytics ficam desligados ali, e domínio
+  próprio fica indisponível — as instruções de DNS apontariam para lugar
+  nenhum (D-014). Os dois voltam sozinhos com `PUBLISH_ROOT_DOMAIN`.
+- **Rate limit em memória**, por instância. Na Vercel cada instância conta
+  separado; o login tem, além disso, os limites do próprio Supabase.
+- **Cron diário** no plano Hobby. Geração, criativos e e-mails não dependem
+  dele — ele só pega retentativas e jobs agendados.
 
 ---
 
-## 5. Criar o projeto na Vercel — **você faz**
+## O que vai (e o que não vai) para o Git
 
-A criação de projeto não é possível pela integração automatizada (a API
-responde `403 forbidden` para essa ação no escopo disponível). Pelo painel:
+Vão o código, as migrations em `drizzle/`, a documentação e `.env.example`.
 
-1. [vercel.com/new](https://vercel.com/new) → **Import Git Repository** →
-   `boreljoao/decola`.
-2. Framework: **Next.js** (detectado sozinho). Não mexa em build command nem em
-   output directory — o `vercel.json` do repositório já traz o que é preciso.
-3. Antes de clicar em **Deploy**, abra *Environment Variables* e cole as do
-   passo 4. As cinco obrigatórias precisam estar lá **antes** do primeiro
-   deploy; senão o build sobe mas toda página responde erro no boot.
-4. Deploy.
+**Não vai `.data/`**, de propósito: é o Postgres embarcado de desenvolvimento
+(PGlite), os uploads, os áudios e a caixa de saída de e-mails locais. O banco
+viaja como **schema** — quem clonar roda `npm run dev` e ganha um banco novo,
+vazio, já migrado. Para levar os dados de teste para outra máquina, copie
+`.data/` por fora do Git.
 
-O *build* passa mesmo sem as variáveis — `src/config/env.ts` tem uma exceção
-para `NEXT_PHASE === "phase-production-build"`, para que o build não exija
-segredos. Quem falha é o *runtime*. Um deploy verde não significa app no ar.
+## Rodar migrations à mão (opcional)
 
----
+O deploy já faz isso. Para aplicar a partir da sua máquina, crie `.env.local`
+na raiz com:
 
-## 6. Fila em produção
+```
+DATABASE_URL=postgres://usuario:senha@host:6543/postgres
+```
 
-Cada enfileiramento chama `after(() => kickDrain())` — o job roda depois da
-resposta, na mesma invocação serverless. Geração de página, criativos e e-mails
-funcionam **sem depender de cron**.
+e rode `npm run db:migrate`. O `.gitignore` exclui `.env.local`, e a senha não
+fica no histórico do shell. **Atenção:** o mesmo arquivo faz o `npm run dev`
+local usar o banco de produção. Apague-o para voltar ao banco local.
 
-O cron em `vercel.json` (`/api/jobs/drain`, diário) é a rede de segurança: pega
-retentativas com backoff e jobs agendados. A frequência diária é o que o plano
-Hobby oferece; em plano pago, troque o `schedule` para `*/5 * * * *` — confirme
-o limite do seu plano antes. Alternativa gratuita: um agendador externo
-(cron-job.org) chamando `POST /api/jobs/drain` com
-`Authorization: Bearer <JOB_DRAIN_TOKEN>`.
+## Domínio e subdomínio
 
----
+Com um domínio registrado (**você faz** — não registro domínio por conta
+própria), DNS wildcard `*.dominio` apontando para a Vercel e
+`PUBLISH_ROOT_DOMAIN=dominio`, as páginas passam para `{slug}.dominio` — o
+formato da spec — e `/p/<slug>` redireciona para lá. O roteamento por host está
+em `src/proxy.ts` e foi verificado E2E em `*.localhost`.
 
-## 7. Domínio e páginas publicadas
+**Confirme antes de contar com isso:** domínio wildcard na Vercel pode exigir
+plano pago. Verifique em *Project → Settings → Domains* ao adicionar
+`*.seudominio.com`.
 
-O produto publica cada página em `{slug}.<PUBLISH_ROOT_DOMAIN>` — o roteamento
-por host está em `src/proxy.ts` e foi verificado E2E em `*.localhost`.
+## Por que outro endereço do deploy pede login
 
-Para isso valer em produção você precisa de:
-
-- um domínio registrado (**você faz** — não registro domínio por conta própria);
-- DNS wildcard `*.dominio` apontando para a Vercel;
-- certificado wildcard.
-
-**Ponto a confirmar antes de contar com isso:** domínio wildcard na Vercel pode
-exigir plano pago. Verifique em *Project → Settings → Domains* ao adicionar
-`*.seudominio.com`. Se não estiver disponível no seu plano, o caminho é o
-domínio próprio por cliente (já implementado: cada domínio é adicionado
-individualmente ao projeto, com verificação por TXT).
-
-Enquanto não houver domínio, o app roda normalmente na URL `*.vercel.app` e as
-páginas ficam acessíveis pelo preview interno — o que **não** funciona é o
-endereço público por subdomínio.
+A proteção da Vercel está como `all_except_custom_domains`: todo endereço
+`*.vercel.app` exige login na Vercel, **menos** o domínio de produção.
+`decola-ruby.vercel.app` é público; `decola-<time>.vercel.app` redireciona para
+o SSO.
 
 ---
 
-## 8. Depois do primeiro deploy
+## Conferência depois do redeploy
 
-- [ ] Abrir `/` e conferir que a home renderiza.
-- [ ] Criar conta e chegar em `/app` (valida Supabase Auth e sessão).
-- [ ] Criar projeto → briefing → gerar → publicar (valida banco, fila e storage).
-- [ ] Enviar um lead pela página publicada e ver em *Leads* (valida rota pública).
-- [ ] Conferir em *Logs* da Vercel que não há erro de boot.
+- [ ] `/` renderiza.
+- [ ] Criar conta leva ao painel `/app` (Supabase Auth e sessão).
+- [ ] Criar projeto → briefing → gerar → publicar (banco, fila e storage).
+- [ ] Abrir o endereço publicado e enviar um lead; ver em *Leads*.
+- [ ] Sair, entrar de novo, e usar "Esqueci minha senha" com o e-mail de um
+      membro do time do Supabase.
+- [ ] *Logs* da Vercel sem erro de boot.
 
-Se o deploy falhar logo no início com mensagem sobre variável ausente, é o
-guard-rail funcionando: falta uma das cinco obrigatórias do passo 4.
+Se toda página responder erro com "Produção exige configuração obrigatória
+ausente", o Supabase não está conectado ao ambiente Production, ou o redeploy
+não foi feito.
 
----
+## O que continua bloqueado
 
-## 9. O que continua bloqueado (honestidade sobre estado)
-
-Nada disso é resolvido por deploy — está registrado em
+Nada disso se resolve com deploy — está em
 [activation-checklist.md](activation-checklist.md) e
 [next-actions.md](next-actions.md):
 
 - Nenhuma transação sandbox foi executada em Stripe ou Mercado Pago.
-- Repasse/escrow do marketplace não tem provedor: a interface declara isso.
+- Repasse/escrow do marketplace não tem provedor; a interface declara isso.
 - Termos, privacidade e cookies são **minuta**, sem revisão jurídica.
 - Valores comerciais pendentes do catálogo continuam pendentes.
-- Sentry não está instalado (SDK ausente), só a variável está prevista.
+- Sentry não está instalado (SDK ausente).
+
+**Aviso sobre o repositório:** ele está público. Não há segredo nele — as
+chaves vivem nas variáveis da Vercel —, mas a lógica de precificação, o motor
+de geração e as regras de crédito ficam visíveis. Para fechar: GitHub →
+*Settings → General → Change visibility → Make private*.
