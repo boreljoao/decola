@@ -7,6 +7,7 @@ import { migrate as migratePglite } from "drizzle-orm/pglite/migrator";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { env } from "@/config/env";
 import * as schema from "./schema";
+import { sanitizeDatabaseUrl } from "./url";
 
 export { schema };
 
@@ -29,10 +30,13 @@ async function createDb(): Promise<Db> {
 
   if (e.DATABASE_URL) {
     const { default: postgres } = await import("postgres");
-    const client = postgres(e.DATABASE_URL, { prepare: false, max: 5 });
+    const client = postgres(sanitizeDatabaseUrl(e.DATABASE_URL), {
+      prepare: false,
+      max: 5,
+    });
     const db = drizzlePg(client, { schema });
     if (e.mode !== "production") {
-      // Em produção, migrations rodam por script de deploy (npm run db:migrate).
+      // Em produção, migrations rodam no build (scripts/migrate-on-deploy.mjs).
       await migratePg(db, { migrationsFolder: MIGRATIONS_FOLDER });
     }
     return db as unknown as Db;

@@ -21,6 +21,13 @@ import {
 
 // ── Enums ────────────────────────────────────────────────────────────────────
 
+/*
+ * Toda tabela tem RLS ligado e nenhuma policy (decisão D-019). No Supabase o
+ * schema `public` é exposto pela Data API, e tabela sem RLS fica legível e
+ * gravável com a chave pública. O app conecta como dono das tabelas, que não
+ * é afetado pelo RLS; a autorização continua no servidor.
+ */
+
 export const workspaceRole = pgEnum("workspace_role", [
   "owner",
   "admin",
@@ -130,7 +137,7 @@ export const profiles = pgTable("profiles", {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}).enableRLS();
 
 /** Sessões server-side usadas pelo DevAuthProvider (nunca em produção). */
 export const sessions = pgTable(
@@ -147,7 +154,7 @@ export const sessions = pgTable(
       .defaultNow(),
   },
   (t) => [index("sessions_profile_idx").on(t.profileId)],
-);
+).enableRLS();
 
 export const invitationStatus = pgEnum("invitation_status", [
   "pending",
@@ -182,7 +189,7 @@ export const workspaces = pgTable("workspaces", {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}).enableRLS();
 
 export const memberships = pgTable(
   "memberships",
@@ -202,7 +209,7 @@ export const memberships = pgTable(
     primaryKey({ columns: [t.workspaceId, t.profileId] }),
     index("memberships_profile_idx").on(t.profileId),
   ],
-);
+).enableRLS();
 
 /**
  * Convites de equipe (spec §15). O token só existe em hash: o valor original
@@ -235,7 +242,7 @@ export const invitations = pgTable(
     index("invitations_workspace_idx").on(t.workspaceId),
     index("invitations_email_idx").on(t.email),
   ],
-);
+).enableRLS();
 
 /** Solicitações de exportação/exclusão de dados (spec §16). */
 export const privacyRequests = pgTable(
@@ -262,7 +269,7 @@ export const privacyRequests = pgTable(
     completedAt: timestamp("completed_at", { withTimezone: true }),
   },
   (t) => [index("privacy_requests_profile_idx").on(t.profileId)],
-);
+).enableRLS();
 
 // ── Produto ──────────────────────────────────────────────────────────────────
 
@@ -286,7 +293,7 @@ export const projects = pgTable(
       .defaultNow(),
   },
   (t) => [index("projects_workspace_idx").on(t.workspaceId)],
-);
+).enableRLS();
 
 export const briefings = pgTable(
   "briefings",
@@ -307,7 +314,7 @@ export const briefings = pgTable(
       .defaultNow(),
   },
   (t) => [index("briefings_workspace_idx").on(t.workspaceId)],
-);
+).enableRLS();
 
 export const briefingRevisions = pgTable(
   "briefing_revisions",
@@ -330,7 +337,7 @@ export const briefingRevisions = pgTable(
   (t) => [
     uniqueIndex("briefing_revisions_unique").on(t.briefingId, t.revision),
   ],
-);
+).enableRLS();
 
 // ── Páginas ──────────────────────────────────────────────────────────────────
 
@@ -361,7 +368,7 @@ export const pages = pgTable(
     index("pages_workspace_idx").on(t.workspaceId),
     index("pages_project_idx").on(t.projectId),
   ],
-);
+).enableRLS();
 
 export const pageVersions = pgTable(
   "page_versions",
@@ -384,7 +391,7 @@ export const pageVersions = pgTable(
       .defaultNow(),
   },
   (t) => [uniqueIndex("page_versions_unique").on(t.pageId, t.version)],
-);
+).enableRLS();
 
 export const publicationDeployments = pgTable(
   "publication_deployments",
@@ -411,7 +418,7 @@ export const publicationDeployments = pgTable(
     completedAt: timestamp("completed_at", { withTimezone: true }),
   },
   (t) => [index("deployments_page_idx").on(t.pageId)],
-);
+).enableRLS();
 
 // ── Domínios próprios ────────────────────────────────────────────────────────
 
@@ -458,7 +465,7 @@ export const domains = pgTable(
     uniqueIndex("domains_host_unique").on(t.host),
     index("domains_page_idx").on(t.pageId),
   ],
-);
+).enableRLS();
 
 // ── Geração ──────────────────────────────────────────────────────────────────
 
@@ -492,7 +499,7 @@ export const generationJobs = pgTable(
     // Um job por revisão de briefing: reexecutar reutiliza, não duplica.
     uniqueIndex("generation_jobs_revision_unique").on(t.briefingRevisionId),
   ],
-);
+).enableRLS();
 
 export const generationSteps = pgTable(
   "generation_steps",
@@ -512,7 +519,7 @@ export const generationSteps = pgTable(
     completedAt: timestamp("completed_at", { withTimezone: true }),
   },
   (t) => [uniqueIndex("generation_steps_unique").on(t.generationJobId, t.step)],
-);
+).enableRLS();
 
 // ── Assets (uploads do usuário) ──────────────────────────────────────────────
 
@@ -550,7 +557,7 @@ export const assets = pgTable(
     index("assets_workspace_idx").on(t.workspaceId),
     index("assets_project_idx").on(t.projectId),
   ],
-);
+).enableRLS();
 
 // ── Áudio do briefing ────────────────────────────────────────────────────────
 
@@ -600,7 +607,7 @@ export const audioRecordings = pgTable(
     // Um áudio ativo por pergunta: regravar substitui.
     uniqueIndex("audio_question_unique").on(t.projectId, t.questionId),
   ],
-);
+).enableRLS();
 
 // ── Criativos ────────────────────────────────────────────────────────────────
 
@@ -636,7 +643,7 @@ export const creativeSets = pgTable(
     completedAt: timestamp("completed_at", { withTimezone: true }),
   },
   (t) => [index("creative_sets_page_idx").on(t.pageId)],
-);
+).enableRLS();
 
 export const creativeAssets = pgTable(
   "creative_assets",
@@ -659,7 +666,7 @@ export const creativeAssets = pgTable(
       .defaultNow(),
   },
   (t) => [index("creative_assets_set_idx").on(t.setId)],
-);
+).enableRLS();
 
 // ── Receita: pedidos, pagamentos e direitos ──────────────────────────────────
 
@@ -721,7 +728,7 @@ export const orders = pgTable(
     uniqueIndex("orders_idempotency_unique").on(t.idempotencyKey),
     index("orders_workspace_idx").on(t.workspaceId),
   ],
-);
+).enableRLS();
 
 export const payments = pgTable(
   "payments",
@@ -748,7 +755,7 @@ export const payments = pgTable(
     uniqueIndex("payments_provider_unique").on(t.provider, t.providerPaymentId),
     index("payments_order_idx").on(t.orderId),
   ],
-);
+).enableRLS();
 
 /**
  * Inbox de webhooks: `(provider, event_id)` único impede conceder duas vezes
@@ -769,7 +776,7 @@ export const webhookInbox = pgTable(
       .defaultNow(),
   },
   (t) => [uniqueIndex("webhook_inbox_unique").on(t.provider, t.eventId)],
-);
+).enableRLS();
 
 /** Concessão de direitos por período. Vitalício é grant separado da assinatura. */
 export const entitlementGrants = pgTable(
@@ -799,7 +806,7 @@ export const entitlementGrants = pgTable(
     // Um grant por pedido: reentrega de webhook não concede de novo.
     uniqueIndex("grants_order_unique").on(t.orderId),
   ],
-);
+).enableRLS();
 
 // ── Cupons ───────────────────────────────────────────────────────────────────
 
@@ -830,7 +837,7 @@ export const coupons = pgTable(
       .defaultNow(),
   },
   (t) => [index("coupons_active_idx").on(t.active)],
-);
+).enableRLS();
 
 /**
  * Reserva transacional durante o checkout (spec §12.3): impede ultrapassar o
@@ -858,7 +865,7 @@ export const couponReservations = pgTable(
     uniqueIndex("coupon_reservations_order_unique").on(t.orderId),
     index("coupon_reservations_coupon_idx").on(t.couponId, t.status),
   ],
-);
+).enableRLS();
 
 /** Resgate confirmado após pagamento — é o que conta para o limite global. */
 export const couponRedemptions = pgTable(
@@ -881,7 +888,7 @@ export const couponRedemptions = pgTable(
     uniqueIndex("coupon_redemptions_order_unique").on(t.orderId),
     index("coupon_redemptions_coupon_idx").on(t.couponId),
   ],
-);
+).enableRLS();
 
 // ── Créditos (Combustível) ───────────────────────────────────────────────────
 
@@ -930,7 +937,7 @@ export const creditLots = pgTable(
       t.periodKey,
     ),
   ],
-);
+).enableRLS();
 
 /** Ledger append-only: correções entram como novas linhas, nunca edição. */
 export const creditLedger = pgTable(
@@ -957,7 +964,7 @@ export const creditLedger = pgTable(
     index("credit_ledger_workspace_idx").on(t.workspaceId),
     uniqueIndex("credit_ledger_operation_unique").on(t.kind, t.operationKey),
   ],
-);
+).enableRLS();
 
 /** Reservas ativas: garantem saldo antes do job pago e expiram sozinhas. */
 export const creditReservations = pgTable(
@@ -979,7 +986,7 @@ export const creditReservations = pgTable(
     uniqueIndex("credit_reservations_operation_unique").on(t.operationKey),
     index("credit_reservations_workspace_idx").on(t.workspaceId),
   ],
-);
+).enableRLS();
 
 // ── Fila durável ─────────────────────────────────────────────────────────────
 
@@ -1009,7 +1016,7 @@ export const jobs = pgTable(
     uniqueIndex("jobs_dedup_unique").on(t.dedupKey),
     index("jobs_poll_idx").on(t.status, t.runAt),
   ],
-);
+).enableRLS();
 
 // ── Leads e analytics ────────────────────────────────────────────────────────
 
@@ -1036,7 +1043,7 @@ export const leads = pgTable(
     index("leads_workspace_idx").on(t.workspaceId, t.pageId),
     uniqueIndex("leads_dedup_unique").on(t.dedupKey),
   ],
-);
+).enableRLS();
 
 export const analyticsEvents = pgTable(
   "analytics_events",
@@ -1067,7 +1074,7 @@ export const analyticsEvents = pgTable(
     uniqueIndex("analytics_event_key_unique").on(t.eventKey),
     index("analytics_page_day_idx").on(t.pageId, t.day),
   ],
-);
+).enableRLS();
 
 // ── Voo Contínuo (experimentos) ──────────────────────────────────────────────
 
@@ -1112,7 +1119,7 @@ export const experiments = pgTable(
       .defaultNow(),
   },
   (t) => [index("experiments_page_idx").on(t.pageId)],
-);
+).enableRLS();
 
 export const experimentVariants = pgTable(
   "experiment_variants",
@@ -1138,7 +1145,7 @@ export const experimentVariants = pgTable(
       .defaultNow(),
   },
   (t) => [index("experiment_variants_experiment_idx").on(t.experimentId)],
-);
+).enableRLS();
 
 /** Atribuição estável: a mesma sessão vê sempre a mesma variante. */
 export const experimentAssignments = pgTable(
@@ -1163,7 +1170,7 @@ export const experimentAssignments = pgTable(
       t.assignmentKey,
     ),
   ],
-);
+).enableRLS();
 
 /** Diário de Bordo: relatório mensal idempotente por página/mês. */
 export const monthlyReports = pgTable(
@@ -1184,7 +1191,7 @@ export const monthlyReports = pgTable(
       .defaultNow(),
   },
   (t) => [uniqueIndex("monthly_reports_unique").on(t.pageId, t.period)],
-);
+).enableRLS();
 
 // ── Marketplace de profissionais ─────────────────────────────────────────────
 
@@ -1228,7 +1235,7 @@ export const professionalApplications = pgTable(
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
   },
   (t) => [index("professional_applications_status_idx").on(t.status)],
-);
+).enableRLS();
 
 /** Perfil público só existe após aprovação — nunca perfis fictícios. */
 export const professionalProfiles = pgTable(
@@ -1252,7 +1259,7 @@ export const professionalProfiles = pgTable(
       .defaultNow(),
   },
   (t) => [index("professional_profiles_active_idx").on(t.active)],
-);
+).enableRLS();
 
 export const serviceRequests = pgTable(
   "service_requests",
@@ -1275,7 +1282,7 @@ export const serviceRequests = pgTable(
       .defaultNow(),
   },
   (t) => [index("service_requests_workspace_idx").on(t.workspaceId)],
-);
+).enableRLS();
 
 export const proposals = pgTable(
   "proposals",
@@ -1300,7 +1307,7 @@ export const proposals = pgTable(
     // Uma proposta por profissional em cada solicitação.
     uniqueIndex("proposals_unique").on(t.requestId, t.professionalId),
   ],
-);
+).enableRLS();
 
 /** Mensagens de contato comercial (/contato e /agencias). */
 export const contactMessages = pgTable("contact_messages", {
@@ -1314,7 +1321,7 @@ export const contactMessages = pgTable("contact_messages", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}).enableRLS();
 
 // ── Integrações externas ─────────────────────────────────────────────────────
 
@@ -1350,7 +1357,7 @@ export const integrationConnections = pgTable(
       .defaultNow(),
   },
   (t) => [uniqueIndex("integration_unique").on(t.workspaceId, t.kind)],
-);
+).enableRLS();
 
 /** Registro de consentimento do visitante (spec §16: versão + escolha). */
 export const consents = pgTable(
@@ -1370,7 +1377,7 @@ export const consents = pgTable(
       .defaultNow(),
   },
   (t) => [uniqueIndex("consents_unique").on(t.pageId, t.visitorKey)],
-);
+).enableRLS();
 
 // ── Operação ─────────────────────────────────────────────────────────────────
 
@@ -1394,7 +1401,7 @@ export const emailDeliveries = pgTable(
     sentAt: timestamp("sent_at", { withTimezone: true }),
   },
   (t) => [uniqueIndex("email_dedup_unique").on(t.dedupKey)],
-);
+).enableRLS();
 
 /**
  * Chaves de API (spec §15). O segredo é exibido UMA VEZ na criação e guardado
@@ -1424,7 +1431,7 @@ export const apiKeys = pgTable(
       .defaultNow(),
   },
   (t) => [index("api_keys_workspace_idx").on(t.workspaceId)],
-);
+).enableRLS();
 
 export const auditLog = pgTable(
   "audit_log",
@@ -1444,4 +1451,4 @@ export const auditLog = pgTable(
       .defaultNow(),
   },
   (t) => [index("audit_workspace_idx").on(t.workspaceId)],
-);
+).enableRLS();
