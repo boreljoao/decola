@@ -1,11 +1,11 @@
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import { env } from "@/config/env";
 import { authenticateApiRequest } from "@/features/api-keys/service";
 import { getDb } from "@/server/db";
 import { pages } from "@/server/db/schema";
 import { clientIp, rateLimit } from "@/server/security/rate-limit";
 
+import { publicPageUrl } from "@/features/pages/public-url";
 /**
  * GET /api/v1/paginas — lista as páginas do workspace da chave.
  * Aplica o mesmo isolamento do app: nunca há como consultar outro workspace.
@@ -35,7 +35,6 @@ export async function GET(request: Request) {
     where: eq(pages.workspaceId, auth.workspaceId),
   });
 
-  const proto = env().APP_URL.startsWith("https") ? "https" : "http";
   return NextResponse.json({
     data: rows.map((page) => ({
       id: page.id,
@@ -43,7 +42,7 @@ export async function GET(request: Request) {
       status: page.status,
       endereco:
         page.status === "live" && page.slug
-          ? `${proto}://${page.slug}.${env().PUBLISH_ROOT_DOMAIN}`
+          ? publicPageUrl(page.slug)
           : null,
       atualizadaEm: page.updatedAt.toISOString(),
     })),

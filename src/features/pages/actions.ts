@@ -3,7 +3,6 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { env } from "@/config/env";
 import { canPublishPage } from "@/features/billing/entitlements";
 import { validatePageDocument } from "@/features/generation/page-document";
 import { requireWorkspace, assertRole } from "@/server/auth";
@@ -15,6 +14,7 @@ import {
   publicationDeployments,
 } from "@/server/db/schema";
 
+import { publicPageAddress, publicPageUrl } from "@/features/pages/public-url";
 /**
  * Publicação (spec §11.1): deployment de versão imutável, verificação de
  * entitlement, reserva de slug e troca atômica somente após sucesso.
@@ -96,10 +96,10 @@ export async function publishPageAction(
     };
   }
 
-  const host = `${slug}.${env().PUBLISH_ROOT_DOMAIN}`;
+  const host = publicPageAddress(slug);
 
   try {
-    const result = await db.transaction(async (tx) => {
+    await db.transaction(async (tx) => {
       // reserva de slug: unicidade garantida pelo índice; conflito → erro claro
       const clash = await tx.query.pages.findFirst({
         where: eq(pages.slug, slug),
@@ -156,13 +156,10 @@ export async function publishPageAction(
         target: page.id,
         meta: { slug, versionId: version.id, deploymentId: deployment.id },
       });
-
-      return { host };
     });
 
     revalidatePath(`/app/paginas/${page.projectId}/publicacao`);
-    const protocol = env().APP_URL.startsWith("https") ? "https" : "http";
-    return { ok: true, url: `${protocol}://${result.host}` };
+    return { ok: true, url: publicPageUrl(slug) };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Falha na publicação.";
     await db

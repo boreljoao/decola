@@ -37,11 +37,14 @@ export function DomainManager({
   domain,
   customDomainAllowed,
   planName,
+  unavailableReason,
 }: {
   pageId: string;
   domain: DomainView | null;
   customDomainAllowed: boolean;
   planName: string;
+  /** Motivo real quando a plataforma ainda não suporta domínio próprio. */
+  unavailableReason?: string;
 }) {
   const router = useRouter();
   const [state, action, pending] = useActionState<DomainActionResult, FormData>(
@@ -56,6 +59,14 @@ export function DomainManager({
       <div className="rounded-xl bg-warning-600/10 px-4 py-3 text-sm text-warning-600">
         O plano {planName} publica em endereço Decola. Domínio próprio faz parte
         dos planos pagos.
+      </div>
+    );
+  }
+
+  if (unavailableReason) {
+    return (
+      <div className="rounded-xl bg-ink-900/5 px-4 py-3 text-sm text-ink-600">
+        {unavailableReason}
       </div>
     );
   }

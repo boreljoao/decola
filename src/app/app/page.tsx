@@ -5,6 +5,7 @@ import { requireWorkspace } from "@/server/auth";
 import { getDb } from "@/server/db";
 import { briefings, pages, projects } from "@/server/db/schema";
 
+import { publicPageAddress } from "@/features/pages/public-url";
 const STATUS_LABEL: Record<
   string,
   { label: string; tone: "neutral" | "success" | "warning" | "danger" | "info" }
@@ -115,8 +116,7 @@ export default async function AppHome() {
                 </div>
                 {page?.slug && page.status === "live" && (
                   <p className="truncate text-sm text-ink-600">
-                    {page.slug}.
-                    {process.env.PUBLISH_ROOT_DOMAIN ?? "localhost:3000"}
+                    {publicPageAddress(page.slug)}
                   </p>
                 )}
                 <div className="mt-auto flex gap-2">

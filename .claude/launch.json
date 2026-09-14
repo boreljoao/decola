@@ -9,6 +9,15 @@
         "set PATH=C:\\Users\\GAMER\\AppData\\Local\\Programs\\nodejs;%PATH%&& npm run dev"
       ],
       "port": 3000
+    },
+    {
+      "name": "decola-path",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": [
+        "/c",
+        "set PATH=C:\\Users\\GAMER\\AppData\\Local\\Programs\\nodejs;%PATH%&& set PUBLISH_MODE=path&& npm run dev"
+      ],
+      "port": 3000
     }
   ]
 }

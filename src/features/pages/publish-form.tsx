@@ -11,12 +11,16 @@ import {
 export function PublishForm({
   pageId,
   currentSlug,
-  rootDomain,
+  addressPrefix,
+  addressSuffix,
   isLive,
 }: {
   pageId: string;
   currentSlug: string | null;
-  rootDomain: string;
+  /** Parte fixa antes do endereço (modo por caminho: `host/p/`). */
+  addressPrefix: string;
+  /** Parte fixa depois do endereço (modo subdomínio: `.dominio`). */
+  addressSuffix: string;
   isLive: boolean;
 }) {
   const [state, action, pending] = useActionState<PublishState, FormData>(
@@ -34,18 +38,23 @@ export function PublishForm({
         <input type="hidden" name="pageId" value={pageId} />
         <Field
           label="Endereço da sua página"
-          hint={`Sua página ficará em https://SEU-ENDERECO.${rootDomain}`}
+          hint={`Sua página ficará em https://${addressPrefix}SEU-ENDERECO${addressSuffix}`}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {addressPrefix && (
+              <span className="text-sm text-ink-600">{addressPrefix}</span>
+            )}
             <Input
               name="slug"
               defaultValue={currentSlug ?? ""}
               placeholder="meu-negocio"
               pattern="[a-z0-9][a-z0-9-]{1,38}[a-z0-9]"
-              className="flex-1"
+              className="min-w-[10rem] flex-1"
               required={!currentSlug}
             />
-            <span className="text-sm text-ink-600">.{rootDomain}</span>
+            {addressSuffix && (
+              <span className="text-sm text-ink-600">{addressSuffix}</span>
+            )}
           </div>
         </Field>
         {state.error && (

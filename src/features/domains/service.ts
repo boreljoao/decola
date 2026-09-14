@@ -164,3 +164,19 @@ export async function resolveActiveDomain(host: string) {
   if (!record || record.status !== "active") return null;
   return record;
 }
+
+/**
+ * Domínio próprio aponta (CNAME) para o domínio de publicação da Decola. No
+ * modo por caminho esse domínio não existe, e as instruções mandariam o cliente
+ * apontar o DNS para `localhost`.
+ */
+export function customDomainUnavailableReason(): string | undefined {
+  if (env().publishing === "path") {
+    return (
+      "Domínio próprio fica disponível quando a Decola tiver um domínio de " +
+      "publicação configurado — é para ele que o seu domínio vai apontar. Por " +
+      "enquanto, as páginas ficam no endereço provisório."
+    );
+  }
+  return undefined;
+}

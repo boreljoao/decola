@@ -111,7 +111,17 @@ export function publishedMetadata(
   };
 }
 
-export function PublishedPage({ data }: { data: PublishedData }) {
+export function PublishedPage({
+  data,
+  thirdPartyScripts = true,
+}: {
+  data: PublishedData;
+  /**
+   * `false` quando a página divide origem com o painel (endereço por caminho):
+   * pixel e analytics de terceiros não carregam nem com consentimento.
+   */
+  thirdPartyScripts?: boolean;
+}) {
   return (
     <PageRenderer
       doc={data.document}
@@ -120,7 +130,7 @@ export function PublishedPage({ data }: { data: PublishedData }) {
       preview={false}
       showBadge={data.showBadge}
       appUrl={env().APP_URL}
-      integrations={data.integrations}
+      integrations={thirdPartyScripts ? data.integrations : []}
     />
   );
 }

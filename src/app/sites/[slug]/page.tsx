@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { env } from "@/config/env";
 import {
   loadPublishedBySlug,
   publishedMetadata,
   PublishedPage,
 } from "@/features/pages/published";
 
+import { publicPageAddress } from "@/features/pages/public-url";
 /**
  * Site publicado no subdomínio Decola (spec §11.1): serve exclusivamente a
  * versão publicada. Nenhum estado privado do app é acessível a partir daqui.
@@ -19,7 +19,7 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { slug } = await props.params;
   const data = await loadPublishedBySlug(slug);
-  return publishedMetadata(data, `${slug}.${env().PUBLISH_ROOT_DOMAIN}`);
+  return publishedMetadata(data, publicPageAddress(slug));
 }
 
 export default async function PublishedSitePage(

@@ -8,8 +8,12 @@ import {
   DomainManager,
   type DomainView,
 } from "@/features/domains/domain-ui";
-import { dnsInstructions } from "@/features/domains/service";
+import {
+  customDomainUnavailableReason,
+  dnsInstructions,
+} from "@/features/domains/service";
 import { PublishForm } from "@/features/pages/publish-form";
+import { publicAddressPattern } from "@/features/pages/public-url";
 import { loadPageForProject, loadProject } from "@/features/projects/queries";
 import { getDb } from "@/server/db";
 import { domains, publicationDeployments } from "@/server/db/schema";
@@ -69,6 +73,7 @@ export default async function PublicacaoPage(
         ),
       }
     : null;
+  const address = publicAddressPattern();
   const deployments = await db.query.publicationDeployments.findMany({
     where: eq(publicationDeployments.pageId, page.id),
     orderBy: [desc(publicationDeployments.createdAt)],
@@ -84,13 +89,26 @@ export default async function PublicacaoPage(
         <p className="mt-2 mb-6 text-sm text-ink-600">
           Plano {plan.name}: {plan.entitlements.maxPublishedPages === "unlimited_commercial" ? "páginas ilimitadas" : `${plan.entitlements.maxPublishedPages} página publicada`}
           {plan.entitlements.showDecolaBadge &&
-            ", em subdomínio Decola com a marca Decola no rodapé"}
+            (env().publishing === "subdomain"
+              ? ", em subdomínio Decola com a marca Decola no rodapé"
+              : ", no endereço da Decola com a marca Decola no rodapé")}
           . Domínio próprio disponível nos planos pagos.
         </p>
+        {env().publishing === "path" && (
+          <p className="mb-6 rounded-xl bg-warning-600/10 px-4 py-3 text-xs leading-relaxed text-warning-600">
+            Endereço provisório: enquanto a Decola não tem domínio configurado,
+            as páginas ficam em <strong>{address.prefix}seu-endereco</strong>.
+            Pixel da Meta e Google Analytics ficam desligados nesse endereço,
+            porque ele divide origem com o painel e script de terceiros não roda
+            ao lado da sua sessão. Eles voltam sozinhos em subdomínio ou domínio
+            próprio.
+          </p>
+        )}
         <PublishForm
           pageId={page.id}
           currentSlug={page.slug}
-          rootDomain={env().PUBLISH_ROOT_DOMAIN}
+          addressPrefix={address.prefix}
+          addressSuffix={address.suffix}
           isLive={page.status === "live"}
         />
 
@@ -106,6 +124,7 @@ export default async function PublicacaoPage(
             domain={domainView}
             customDomainAllowed={plan.entitlements.customDomain}
             planName={plan.name}
+            unavailableReason={customDomainUnavailableReason()}
           />
         </div>
       </Card>

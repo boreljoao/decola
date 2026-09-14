@@ -26,6 +26,19 @@ const KEYS: string[] = [
   "ANTHROPIC_API_KEY",
   "DECOLA_MODE",
   "NEXT_PHASE",
+  "PUBLISH_MODE",
+  "DATABASE_URL_UNPOOLED",
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "POSTGRES_URL",
+  "POSTGRES_URL_NON_POOLING",
+  "SUPABASE_URL",
+  "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+  "SUPABASE_PUBLISHABLE_KEY",
+  "SUPABASE_ANON_KEY",
+  "SUPABASE_SECRET_KEY",
+  "VERCEL",
+  "VERCEL_ENV",
+  "VERCEL_PROJECT_PRODUCTION_URL",
 ];
 
 let saved: Record<string, string | undefined>;
@@ -103,3 +116,88 @@ describe("produção com variáveis em branco", () => {
     expect(() => env()).not.toThrow(/Invalid URL/);
   });
 });
+
+describe("nomes da integração Supabase da Vercel", () => {
+  // Exatamente as variáveis que a integração injeta, sem nenhum nome canônico.
+  function integracaoSupabase() {
+    process.env.POSTGRES_URL = "postgres://u:p@pooler.exemplo.com:6543/postgres";
+    process.env.POSTGRES_URL_NON_POOLING = "postgres://u:p@db.exemplo.com:5432/postgres";
+    process.env.SUPABASE_URL = "https://projeto.supabase.co";
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://projeto.supabase.co";
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_teste";
+    process.env.SUPABASE_SECRET_KEY = "sb_secret_teste";
+  }
+
+  it("liga banco, Auth e Storage só com eles", () => {
+    integracaoSupabase();
+
+    const e = env();
+    expect(e.DATABASE_URL).toBe(process.env.POSTGRES_URL);
+    expect(e.DATABASE_URL_UNPOOLED).toBe(process.env.POSTGRES_URL_NON_POOLING);
+    expect(e.capabilities.externalDatabase).toBe(true);
+    expect(e.capabilities.supabaseAuth).toBe(true);
+    expect(e.capabilities.supabaseStorage).toBe(true);
+  });
+
+  it("sobe em produção sem SESSION_SECRET, que nenhum fluxo usa", () => {
+    integracaoSupabase();
+    process.env.DECOLA_MODE = "production";
+
+    expect(() => env()).not.toThrow();
+  });
+
+  it("o nome canônico vence o alias", () => {
+    integracaoSupabase();
+    process.env.DATABASE_URL = "postgres://u:p@canonico.exemplo.com:5432/db";
+
+    expect(env().DATABASE_URL).toBe("postgres://u:p@canonico.exemplo.com:5432/db");
+  });
+});
+
+describe("URL do app na Vercel", () => {
+  it("usa a URL de produção do projeto quando APP_URL não foi configurada", () => {
+    process.env.VERCEL_PROJECT_PRODUCTION_URL = "decola-ruby.vercel.app";
+
+    expect(env().APP_URL).toBe("https://decola-ruby.vercel.app");
+  });
+
+  it("APP_URL configurada vence", () => {
+    process.env.VERCEL_PROJECT_PRODUCTION_URL = "decola-ruby.vercel.app";
+    process.env.APP_URL = "https://app.decola.com.br";
+
+    expect(env().APP_URL).toBe("https://app.decola.com.br");
+  });
+});
+
+describe("formato do endereço público", () => {
+  function producaoConfigurada() {
+    process.env.DECOLA_MODE = "production";
+    process.env.DATABASE_URL = "postgres://u:p@db.exemplo.com:5432/db";
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://projeto.supabase.co";
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "chave-publica";
+  }
+
+  it("produção sem domínio de publicação serve por caminho", () => {
+    producaoConfigurada();
+
+    expect(env().publishing).toBe("path");
+  });
+
+  it("produção com domínio de publicação usa subdomínio", () => {
+    producaoConfigurada();
+    process.env.PUBLISH_ROOT_DOMAIN = "decola.com.br";
+
+    expect(env().publishing).toBe("subdomain");
+  });
+
+  it("fora de produção continua em subdomínio (*.localhost)", () => {
+    expect(env().publishing).toBe("subdomain");
+  });
+
+  it("PUBLISH_MODE força o formato", () => {
+    process.env.PUBLISH_MODE = "path";
+
+    expect(env().publishing).toBe("path");
+  });
+});
+

@@ -2,7 +2,6 @@ import "server-only";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { eq } from "drizzle-orm";
-import { env } from "@/config/env";
 import type { BriefingAnswers } from "@/features/briefing/questions";
 import { validatePageDocument } from "@/features/generation/page-document";
 import { getDb } from "@/server/db";
@@ -16,6 +15,7 @@ import {
 import { generateCreativeProposals } from "./generator";
 import { renderMetaCreatives } from "./render-image";
 
+import { publicPageUrl } from "@/features/pages/public-url";
 /** Handler do job "generate_creatives" — idempotente por setId. */
 export async function processCreativeSet(
   payload: Record<string, unknown>,
@@ -52,10 +52,9 @@ export async function processCreativeSet(
     const page = await db.query.pages.findFirst({
       where: eq(pages.id, set.pageId),
     });
-    const e = env();
     const publishedUrl =
       page?.status === "live" && page.slug
-        ? `${e.APP_URL.startsWith("https") ? "https" : "http"}://${page.slug}.${e.PUBLISH_ROOT_DOMAIN}`
+        ? publicPageUrl(page.slug)
         : undefined;
 
     const proposals = generateCreativeProposals({

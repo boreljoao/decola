@@ -1,15 +1,20 @@
 import "server-only";
 import { z } from "zod";
+import { resolveEnvSource } from "./env-source";
 
 /**
  * Validação de ambiente no boot (spec §14/§20).
  * - Variáveis ausentes desabilitam a capability correspondente com diagnóstico legível.
- * - Em produção, requisitos duros (banco, segredo de sessão) derrubam o boot em vez de
+ * - Em produção, requisitos duros (banco e Auth) derrubam o boot em vez de
  *   cair silenciosamente em mock.
+ * - Aliases de integração e chaves vazias são resolvidos antes, em
+ *   `env-source.ts`.
  */
 
 const AppMode = z.enum(["demo", "development", "test", "production"]);
 export type AppMode = z.infer<typeof AppMode>;
+
+export type PublishingMode = "subdomain" | "path";
 
 const rawSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -18,16 +23,28 @@ const rawSchema = z.object({
   // App / hosts
   APP_URL: z.string().url().default("http://localhost:3000"),
   PUBLISH_ROOT_DOMAIN: z.string().default("localhost:3000"),
+  /** Força o formato do endereço público; sem valor, decide pelo ambiente. */
+  PUBLISH_MODE: z.enum(["subdomain", "path"]).optional(),
+  /**
+   * Nenhum fluxo atual lê este valor: as sessões de dev são tokens aleatórios
+   * com hash no banco, e as de produção pertencem ao Supabase. Continua aceito,
+   * mas deixou de ser exigido no boot — exigir um segredo que nada usa só
+   * acrescentava um passo de configuração.
+   */
   SESSION_SECRET: z.string().min(16).optional(),
 
   // Banco
   DATABASE_URL: z.string().optional(),
+  /** Conexão direta (sem pooler). Só as migrations do deploy usam. */
+  DATABASE_URL_UNPOOLED: z.string().optional(),
   /** Subpasta de .data/ — o prefixo .data é fixo para escopo estático do build. */
   PGLITE_DIR: z.string().default("pglite"),
 
-  // Supabase (Auth/Storage) — implementado, aguardando configuração
+  // Supabase (Auth/Storage)
   NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
+  /** Chave pública do projeto — a antiga "anon" ou a nova "publishable". */
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
+  /** Segredo de backend — a antiga "service_role" ou a nova "secret". */
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
 
   // Pagamentos
@@ -55,6 +72,11 @@ const rawSchema = z.object({
 
   // Worker
   JOB_DRAIN_TOKEN: z.string().optional(),
+
+  // Plataforma — variáveis de sistema da Vercel
+  VERCEL: z.string().optional(),
+  VERCEL_ENV: z.string().optional(),
+  VERCEL_PROJECT_PRODUCTION_URL: z.string().optional(),
 });
 
 export type RawEnv = z.infer<typeof rawSchema>;
@@ -85,29 +107,18 @@ export interface Capabilities {
 export interface Env extends RawEnv {
   mode: AppMode;
   capabilities: Capabilities;
-}
-
-/**
- * Uma variável **declarada e vazia** significa "não configurada", e não "valor
- * inválido". Painéis de deploy (e arquivos .env colados) criam a chave com
- * valor em branco o tempo todo; sem esta limpeza, `.default()` e `.optional()`
- * do Zod não se aplicam — eles só valem para `undefined` — e o boot falha com
- * "Invalid URL" em vez de usar o default.
- *
- * O valor em si não é alterado: só decidimos, pelo `trim`, se a chave existe.
- */
-function definedEntries(source: NodeJS.ProcessEnv): Record<string, string> {
-  const result: Record<string, string> = {};
-  for (const [key, value] of Object.entries(source)) {
-    if (typeof value !== "string") continue;
-    if (value.trim() === "") continue;
-    result[key] = value;
-  }
-  return result;
+  /**
+   * Formato do endereço público das páginas publicadas (decisão D-014).
+   * `subdomain` exige DNS wildcard; `path` serve em `<APP_URL>/p/<slug>`.
+   */
+  publishing: PublishingMode;
+  /** Rodando na Vercel — limite de corpo de requisição e variáveis de sistema. */
+  onVercel: boolean;
 }
 
 function build(): Env {
-  const parsed = rawSchema.safeParse(definedEntries(process.env));
+  const source = resolveEnvSource(process.env);
+  const parsed = rawSchema.safeParse(source);
   if (!parsed.success) {
     const issues = parsed.error.issues
       .map((i) => `  - ${i.path.join(".")}: ${i.message}`)
@@ -133,15 +144,22 @@ function build(): Env {
     sentry: Boolean(raw.SENTRY_DSN),
   };
 
+  // Subdomínio exige DNS wildcard, então só vale com domínio configurado de
+  // propósito. Fora de produção, *.localhost resolve sozinho no navegador.
+  const publishing: PublishingMode =
+    raw.PUBLISH_MODE ??
+    (source.PUBLISH_ROOT_DOMAIN || mode !== "production" ? "subdomain" : "path");
+
   // Durante o build (`next build`), segredos de runtime não existem — a
   // validação dura acontece no primeiro request do servidor de produção.
   const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
   if (mode === "production" && !isBuildPhase) {
     const hard: string[] = [];
-    if (!capabilities.externalDatabase) hard.push("DATABASE_URL");
-    if (!raw.SESSION_SECRET) hard.push("SESSION_SECRET");
+    if (!capabilities.externalDatabase) hard.push("DATABASE_URL (ou POSTGRES_URL)");
     if (!capabilities.supabaseAuth)
-      hard.push("NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY");
+      hard.push(
+        "NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY (ou a chave publishable)",
+      );
     if (hard.length > 0) {
       throw new Error(
         `Produção exige configuração obrigatória ausente: ${hard.join(", ")}. ` +
@@ -150,7 +168,13 @@ function build(): Env {
     }
   }
 
-  return { ...raw, mode, capabilities };
+  return {
+    ...raw,
+    mode,
+    capabilities,
+    publishing,
+    onVercel: Boolean(raw.VERCEL),
+  };
 }
 
 let cached: Env | undefined;

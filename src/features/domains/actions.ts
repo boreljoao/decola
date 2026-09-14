@@ -7,6 +7,7 @@ import { assertRole, requireWorkspace } from "@/server/auth";
 import { getDb } from "@/server/db";
 import { auditLog, domains, pages } from "@/server/db/schema";
 import {
+  customDomainUnavailableReason,
   dnsInstructions,
   generateVerificationToken,
   normalizeHost,
@@ -41,6 +42,9 @@ export async function addDomainAction(
       error: `O plano ${plan.name} publica em endereço Decola. Domínio próprio faz parte dos planos pagos.`,
     };
   }
+
+  const unavailable = customDomainUnavailableReason();
+  if (unavailable) return { ok: false, error: unavailable };
 
   const normalized = normalizeHost(String(formData.get("host") ?? ""));
   if (!normalized.ok) return { ok: false, error: normalized.error };
