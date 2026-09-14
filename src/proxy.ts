@@ -1,4 +1,5 @@
 ﻿import { NextResponse, type NextRequest } from "next/server";
+import { refreshAuthSession } from "@/server/auth/session-refresh";
 
 /**
  * Roteamento por host (decisão D-007): `{slug}.<PUBLISH_ROOT_DOMAIN>` serve a
@@ -11,7 +12,7 @@
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])?$/;
 const HOST_RE = /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const rawHost = (request.headers.get("host") ?? "").toLowerCase();
   const host = rawHost.replace(/:\d+$/, "");
   const root = (process.env.PUBLISH_ROOT_DOMAIN ?? "localhost:3000")
@@ -23,6 +24,9 @@ export function proxy(request: NextRequest) {
   // app. Sem APP_URL não sabemos, e o default de dev (localhost) não bate com
   // nada em produção.
   const appHostKnown = (process.env.APP_URL ?? "").trim() !== "";
+  // Endereços *.vercel.app são da plataforma (aliases e URL de cada deploy):
+  // nunca podem ser domínio de cliente, mesmo com APP_URL configurada.
+  const platformHost = host.endsWith(".vercel.app");
 
   const isAppHost = rawHost === appHost || host === appHost.replace(/:\d+$/, "");
 
@@ -45,7 +49,13 @@ export function proxy(request: NextRequest) {
   //    (`*.vercel.app`) cairia aqui e TODA requisição — inclusive a home
   //    estática — viraria busca de um domínio de cliente que não existe. O site
   //    inteiro respondia 500 antes de renderizar qualquer coisa.
-  if (appHostKnown && !isAppHost && host !== root && HOST_RE.test(host)) {
+  if (
+    appHostKnown &&
+    !platformHost &&
+    !isAppHost &&
+    host !== root &&
+    HOST_RE.test(host)
+  ) {
     const url = request.nextUrl.clone();
     url.pathname = `/sites/dominio/${encodeURIComponent(host)}`;
     return NextResponse.rewrite(url);
@@ -56,7 +66,7 @@ export function proxy(request: NextRequest) {
     return new NextResponse("Não encontrado.", { status: 404 });
   }
 
-  return NextResponse.next();
+  return refreshAuthSession(request);
 }
 
 function safeHost(url: string): string {

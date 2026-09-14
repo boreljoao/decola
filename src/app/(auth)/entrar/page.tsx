@@ -20,6 +20,16 @@ export default async function EntrarPage(props: PageProps<"/entrar">) {
       <p className="mt-2 mb-6 text-sm text-ink-600">
         Entre para acompanhar suas páginas.
       </p>
+      {searchParams.aviso === "link" && (
+        <p
+          role="status"
+          className="mb-6 rounded-xl bg-warning-600/10 px-4 py-3 text-sm text-warning-600"
+        >
+          Não deu para concluir pelo link: ele expirou, já foi usado ou foi
+          aberto em outro navegador. Se você estava confirmando o e-mail, ele
+          pode já estar confirmado — tente entrar.
+        </p>
+      )}
       <SignInForm
         passwordLogin={provider.capabilities.passwordLogin}
         next={next}

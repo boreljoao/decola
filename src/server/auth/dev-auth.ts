@@ -7,6 +7,7 @@ import { getDb } from "@/server/db";
 import { profiles, sessions } from "@/server/db/schema";
 import { ensureProfile } from "./profile-service";
 import type {
+  AuthActionResult,
   AuthProvider,
   AuthResult,
   AuthUser,
@@ -135,5 +136,32 @@ export class DevAuthProvider implements AuthProvider {
       )
       .limit(1);
     return row[0] ?? null;
+  }
+
+  // Confirmação, recuperação e troca de senha não existem num login sem senha.
+  // As páginas mostram o aviso de modo dev em vez de fingir que enviaram algo.
+  private unsupported(): AuthActionResult {
+    return {
+      ok: false,
+      code: "not_configured",
+      message:
+        "Indisponível no modo de desenvolvimento: aqui o login é só por e-mail, sem senha.",
+    };
+  }
+
+  async resendConfirmation(): Promise<AuthActionResult> {
+    return this.unsupported();
+  }
+
+  async requestPasswordReset(): Promise<AuthActionResult> {
+    return this.unsupported();
+  }
+
+  async updatePassword(): Promise<AuthActionResult> {
+    return this.unsupported();
+  }
+
+  async completeEmailLink(): Promise<AuthActionResult> {
+    return this.unsupported();
   }
 }

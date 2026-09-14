@@ -11,7 +11,12 @@ import { proxy } from "@/proxy";
  * estática aparecia.
  */
 
-const KEYS: string[] = ["APP_URL", "PUBLISH_ROOT_DOMAIN"];
+const KEYS: string[] = [
+  "APP_URL",
+  "PUBLISH_ROOT_DOMAIN",
+  "NEXT_PUBLIC_SUPABASE_URL",
+  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+];
 let saved: Record<string, string | undefined>;
 
 beforeEach(() => {
@@ -40,23 +45,30 @@ function rewriteTarget(response: Response): string | null {
 }
 
 describe("sem APP_URL configurada", () => {
-  it("serve o app no host do deploy em vez de procurar domínio de cliente", () => {
-    const response = proxy(request("decola-ruby.vercel.app"));
+  it("serve o app no host do deploy em vez de procurar domínio de cliente", async () => {
+    const response = await proxy(request("decola-ruby.vercel.app"));
 
     expect(rewriteTarget(response)).toBeNull();
     expect(response.status).toBe(200);
   });
 
-  it("mantém o subdomínio de publicação em dev", () => {
-    const response = proxy(request("padaria.localhost"));
+  it("mantém o subdomínio de publicação em dev", async () => {
+    const response = await proxy(request("padaria.localhost"));
 
     expect(rewriteTarget(response)).toBe("/sites/padaria");
   });
 
-  it("recusa slug fora do formato", () => {
-    const response = proxy(request("NAO_VALIDO_.localhost"));
+  it("recusa slug fora do formato", async () => {
+    const response = await proxy(request("NAO_VALIDO_.localhost"));
 
     expect(response.status).toBe(404);
+  });
+
+  it("serve a página publicada por caminho no host do app", async () => {
+    const response = await proxy(request("decola-ruby.vercel.app", "/p/padaria"));
+
+    expect(rewriteTarget(response)).toBeNull();
+    expect(response.status).toBe(200);
   });
 });
 
@@ -66,26 +78,34 @@ describe("com APP_URL configurada", () => {
     process.env.PUBLISH_ROOT_DOMAIN = "decola.com.br";
   });
 
-  it("resolve domínio próprio do cliente", () => {
-    const response = proxy(request("padaria-do-ze.com.br"));
+  it("resolve domínio próprio do cliente", async () => {
+    const response = await proxy(request("padaria-do-ze.com.br"));
 
     expect(rewriteTarget(response)).toBe("/sites/dominio/padaria-do-ze.com.br");
   });
 
-  it("serve o app no próprio host", () => {
-    const response = proxy(request("app.decola.com.br"));
+  it("serve o app no próprio host", async () => {
+    const response = await proxy(request("app.decola.com.br"));
 
     expect(rewriteTarget(response)).toBeNull();
   });
 
-  it("resolve subdomínio de publicação", () => {
-    const response = proxy(request("padaria.decola.com.br"));
+  it("nunca trata endereço *.vercel.app como domínio de cliente", async () => {
+    const response = await proxy(
+      request("decola-git-master-joao-pedro-borels-projects.vercel.app"),
+    );
+
+    expect(rewriteTarget(response)).toBeNull();
+  });
+
+  it("resolve subdomínio de publicação", async () => {
+    const response = await proxy(request("padaria.decola.com.br"));
 
     expect(rewriteTarget(response)).toBe("/sites/padaria");
   });
 
-  it("bloqueia acesso direto ao caminho interno pelo host do app", () => {
-    const response = proxy(request("app.decola.com.br", "/sites/padaria"));
+  it("bloqueia acesso direto ao caminho interno pelo host do app", async () => {
+    const response = await proxy(request("app.decola.com.br", "/sites/padaria"));
 
     expect(response.status).toBe(404);
   });
