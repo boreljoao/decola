@@ -54,9 +54,9 @@ class LocalStorageProvider implements StorageProvider {
 }
 
 /**
- * Adapter Supabase Storage (produção). Bucket privado; leitura sempre pelo
- * servidor com a service role, após validar workspace.
- * Estado: implementada_aguardando_configuracao.
+ * Adapter Supabase Storage (produção). Bucket privado, criado no primeiro
+ * upload; leitura sempre pelo servidor com a chave secreta, após validar
+ * workspace.
  */
 class SupabaseStorageProvider implements StorageProvider {
   readonly kind = "supabase" as const;
@@ -74,9 +74,23 @@ class SupabaseStorageProvider implements StorageProvider {
 
   async put({ key, body, contentType }: PutObjectInput): Promise<void> {
     const supabase = await this.client();
-    const { error } = await supabase.storage
-      .from(this.bucket)
-      .upload(key, body, { contentType, upsert: true });
+    const upload = () =>
+      supabase.storage
+        .from(this.bucket)
+        .upload(key, body, { contentType, upsert: true });
+
+    let { error } = await upload();
+    if (error && /bucket not found/i.test(error.message)) {
+      // Primeiro upload do projeto: cria o bucket — sempre privado — em vez de
+      // exigir um passo manual no painel do Supabase antes do primeiro logo.
+      const created = await supabase.storage.createBucket(this.bucket, {
+        public: false,
+      });
+      if (created.error && !/already exists/i.test(created.error.message)) {
+        throw new StorageError("write_failed", created.error.message);
+      }
+      ({ error } = await upload());
+    }
     if (error) throw new StorageError("write_failed", error.message);
   }
 

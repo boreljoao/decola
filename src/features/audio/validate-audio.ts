@@ -1,10 +1,11 @@
+import { MAX_AUDIO_BYTES } from "@/features/assets/upload-limits";
 /**
  * Validação de áudio por conteúdo real (spec §7.2/§16).
  * Mesma regra das imagens: o formato vem dos magic bytes, nunca do
  * content-type declarado pelo cliente. Módulo puro e testável.
  */
 
-export const MAX_AUDIO_BYTES = 10 * 1024 * 1024; // 10 MB
+export { MAX_AUDIO_BYTES };
 export const MAX_DURATION_SECONDS = 180; // 3 minutos por resposta
 
 export type AudioMime = "audio/webm" | "audio/ogg" | "audio/mp4" | "audio/mpeg";
@@ -22,7 +23,7 @@ export type AudioFailure =
 
 export const AUDIO_MESSAGES: Record<AudioFailure, string> = {
   empty: "A gravação está vazia.",
-  too_large: "A gravação precisa ter até 10 MB.",
+  too_large: "A gravação precisa ter até 4 MB.",
   too_long: "A gravação precisa ter até 3 minutos.",
   unsupported_type:
     "Formato de áudio não suportado. Grave novamente pelo navegador.",

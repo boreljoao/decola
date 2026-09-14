@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Button, cx } from "@/components/ui";
 import type { ImageRef } from "@/features/generation/page-document";
 
+import { MAX_IMAGE_BYTES, UPLOAD_LIMIT_LABEL } from "./upload-limits";
 /**
  * Upload de imagem com feedback de estado (spec §5.3: padrão, carregando,
  * erro). A validação real acontece no servidor — aqui só há conveniência.
@@ -31,6 +32,13 @@ export function ImageUploadField({
   const [error, setError] = useState<string>("");
 
   async function upload(file: File) {
+    if (file.size > MAX_IMAGE_BYTES) {
+      setState("error");
+      setError(
+        `A imagem precisa ter até ${UPLOAD_LIMIT_LABEL}. Reduza o arquivo e tente de novo.`,
+      );
+      return;
+    }
     setState("uploading");
     setError("");
     try {
@@ -42,6 +50,10 @@ export function ImageUploadField({
         method: "POST",
         body: form,
       });
+      if (res.status === 413) {
+        // Recusado pela plataforma antes do nosso código: a resposta nem é JSON.
+        throw new Error(`A imagem precisa ter até ${UPLOAD_LIMIT_LABEL}.`);
+      }
       const json = (await res.json()) as {
         ok: boolean;
         message?: string;
@@ -133,7 +145,7 @@ export function ImageUploadField({
         }}
       />
       <p className="text-xs text-ink-600">
-        PNG, JPEG ou WebP, até 5 MB. Dados de localização (EXIF) são removidos.
+        PNG, JPEG ou WebP, até {UPLOAD_LIMIT_LABEL}. Dados de localização (EXIF) são removidos.
       </p>
       {state === "error" && (
         <p role="alert" className="text-sm font-medium text-danger-600">

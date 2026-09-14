@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, cx } from "@/components/ui";
 
+import { MAX_AUDIO_BYTES, UPLOAD_LIMIT_LABEL } from "@/features/assets/upload-limits";
 /**
  * Resposta por áudio (spec §7.2).
  *
@@ -56,6 +57,13 @@ export function AudioAnswer({
 
   const upload = useCallback(
     async (blob: Blob, durationSeconds: number) => {
+      if (blob.size > MAX_AUDIO_BYTES) {
+        setPhase("error");
+        setMessage(
+          `A gravação passou de ${UPLOAD_LIMIT_LABEL}. Grave uma resposta mais curta.`,
+        );
+        return;
+      }
       setPhase("uploading");
       setMessage(null);
       try {
@@ -69,6 +77,10 @@ export function AudioAnswer({
           method: "POST",
           body: form,
         });
+        if (res.status === 413) {
+          // Recusado pela plataforma antes do nosso código: a resposta nem é JSON.
+          throw new Error(`A gravação precisa ter até ${UPLOAD_LIMIT_LABEL}.`);
+        }
         const json = (await res.json()) as {
           ok: boolean;
           message?: string;

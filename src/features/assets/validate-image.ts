@@ -1,3 +1,4 @@
+import { MAX_IMAGE_BYTES } from "./upload-limits";
 /**
  * Validação de imagem por conteúdo real (spec §16).
  * - MIME determinado por magic bytes, NUNCA pelo content-type declarado.
@@ -7,7 +8,7 @@
  * Módulo puro — sem I/O — para ser testável.
  */
 
-export const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB (default da spec)
+export { MAX_IMAGE_BYTES };
 export const MAX_DIMENSION = 6000;
 export const MIN_DIMENSION = 16;
 
@@ -31,7 +32,7 @@ export type ValidationFailure =
 
 export const FAILURE_MESSAGES: Record<ValidationFailure, string> = {
   empty: "O arquivo está vazio.",
-  too_large: "A imagem precisa ter até 5 MB.",
+  too_large: "A imagem precisa ter até 4 MB.",
   unsupported_type: "Formato não suportado. Envie PNG, JPEG ou WebP.",
   svg_rejected:
     "Arquivos SVG não são aceitos por segurança. Converta para PNG ou WebP.",
